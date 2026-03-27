@@ -137,9 +137,9 @@
             border-radius: 50%;
             background: transparent;
             box-shadow:
-                0 -4px 20px rgba(80, 200, 255, 0.15),
-                0 -8px 40px rgba(80, 200, 255, 0.08),
-                0 -2px 8px rgba(120, 220, 255, 0.2);
+                0 -4px 20px rgba(255, 255, 255, 0.15),
+                0 -8px 40px rgba(255, 255, 255, 0.08),
+                0 -2px 8px rgba(255, 255, 255, 0.2);
             pointer-events: none;
             z-index: 2;
         }
@@ -149,11 +149,11 @@
             height: 250vw;
             border-radius: 50%;
             background:
-                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.1) 0%, transparent 40%),
-                radial-gradient(circle at 30% 30%, var(--earth-detail) 0%, transparent 20%),
-                radial-gradient(circle at 70% 40%, var(--earth-detail) 0%, transparent 25%),
-                var(--earth-base);
-            box-shadow: 0 -10px 100px var(--earth-atmosphere);
+                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.06) 0%, transparent 40%),
+                radial-gradient(circle at 30% 30%, #2a2e36 0%, transparent 20%),
+                radial-gradient(circle at 70% 40%, #2a2e36 0%, transparent 25%),
+                #1c1f26;
+            box-shadow: 0 -10px 100px rgba(255, 255, 255, 0.05);
             z-index: 1;
         }
 
@@ -220,8 +220,8 @@
         /* --- 7. ROCKET PARTS --- */
         .rocket-body {
             position: relative;
-            width: 80px;
-            height: 160px;
+            width: 70px;
+            height: 180px;
             background: linear-gradient(to right, var(--rocket-body) 40%, var(--rocket-shadow));
             border-radius: 50% 50% 10% 10%;
             z-index: 5;
@@ -229,7 +229,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* Window with inner glow */
         .window {
             position: absolute;
             top: 40px;
@@ -237,18 +236,9 @@
             transform: translateX(-50%);
             width: 35px;
             height: 35px;
-            background: radial-gradient(circle at 40% 40%, #3a4a5c, #111);
+            background: #111;
             border: 3px solid #666;
             border-radius: 50%;
-            box-shadow:
-                0 0 15px rgba(100, 180, 255, 0.3),
-                0 0 30px rgba(100, 180, 255, 0.1),
-                inset 0 0 10px rgba(100, 180, 255, 0.2);
-            animation: windowPulse 3s ease-in-out infinite;
-        }
-        @keyframes windowPulse {
-            0%, 100% { box-shadow: 0 0 15px rgba(100, 180, 255, 0.3), 0 0 30px rgba(100, 180, 255, 0.1), inset 0 0 10px rgba(100, 180, 255, 0.2); }
-            50% { box-shadow: 0 0 20px rgba(100, 180, 255, 0.5), 0 0 40px rgba(100, 180, 255, 0.2), inset 0 0 15px rgba(100, 180, 255, 0.35); }
         }
 
         .fin {
@@ -264,7 +254,7 @@
         .fin-center {
             position: absolute;
             bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 4px; height: 50px; background: var(--rocket-dark);
+            width: 4px; height: 50px; background: #0e1e2e;
             z-index: 6;
         }
 
@@ -281,13 +271,13 @@
 
         .flame-core {
             position: absolute; top: 0;
-            width: 18px;
-            height: 300px;
+            width: 24px;
+            height: 400px;
             background: linear-gradient(to bottom,
                 #ffffff 0%,
-                #b0d4ff 15%,
-                rgba(80, 200, 255, 0.6) 45%,
-                rgba(80, 200, 255, 0) 100%
+                rgba(200, 200, 200, 0.8) 15%,
+                rgba(150, 150, 150, 0.4) 45%,
+                rgba(0, 0, 0, 0) 100%
             );
             border-radius: 0 0 50% 50%;
             filter: blur(4px);
@@ -296,12 +286,12 @@
         }
         .flame-outer {
             position: absolute; top: 0;
-            width: 40px;
-            height: 380px;
+            width: 52px;
+            height: 480px;
             background: linear-gradient(to bottom,
-                rgba(180, 220, 255, 0.8) 0%,
-                rgba(80, 200, 255, 0.4) 35%,
-                rgba(80, 200, 255, 0.1) 65%,
+                rgba(200, 200, 200, 0.7) 0%,
+                rgba(100, 100, 100, 0.3) 35%,
+                rgba(50, 50, 50, 0.1) 65%,
                 transparent 100%
             );
             border-radius: 0 0 50% 50%;
@@ -317,7 +307,7 @@
             top: 155px;
             width: 200px;
             height: 200px;
-            background: radial-gradient(circle, rgba(80, 200, 255, 0.12), transparent 70%);
+            background: radial-gradient(circle, rgba(200, 200, 200, 0.1), transparent 70%);
             pointer-events: none;
             z-index: 0;
             filter: blur(20px);
@@ -346,7 +336,7 @@
             position: absolute;
             top: 150px;
             width: 80px;
-            height: 600px;
+            height: 300px;
             z-index: 20;
             background: transparent;
             cursor: pointer;
@@ -378,7 +368,7 @@
             opacity: 0;
         }
         @keyframes smokeDrift {
-            0% { opacity: 0.3; transform: translate(0, 0) scale(0.5); }
+            0% { opacity: 0.15; transform: translate(0, 0) scale(0.5); }
             100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(2); }
         }
 
@@ -544,7 +534,7 @@
 
         // Occasional colored sprinkle
         if (Math.random() > 0.7) {
-            const colors = ['#50c8ff', '#4a9eff', '#b0d4ff', '#78dcff'];
+            const colors = ['#ffffff', '#cccccc', '#aaaaaa', '#dddddd'];
             const c = colors[Math.floor(Math.random() * colors.length)];
             s.style.background = c;
             s.style.boxShadow = `0 0 6px ${c}`;
