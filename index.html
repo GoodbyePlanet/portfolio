@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocket Launch</title>
+    <style>
+        /* --- 1. PALETTE --- */
+        :root {
+            --bg-color: #21242c;
+            --earth-base: #1a1a1a;
+            --earth-detail: #333333;
+            --earth-atmosphere: rgba(255, 255, 255, 0.1);
+            --rocket-body: #e6e6e6;
+            --rocket-shadow: #999999;
+            --rocket-dark: #151515;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 80%, #353942 0%, var(--bg-color) 70%);
+            font-family: sans-serif;
+        }
+
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            overflow: hidden;
+        }
+
+        /* --- 2. NEBULA BACKDROP --- */
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.08;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .nebula-1 {
+            width: 500px; height: 400px;
+            background: radial-gradient(circle, #7b2d8e, transparent);
+            top: 10%; left: 5%;
+            animation: nebulaDrift 20s ease-in-out infinite alternate;
+        }
+        .nebula-2 {
+            width: 400px; height: 350px;
+            background: radial-gradient(circle, #1a6b6a, transparent);
+            top: 20%; right: 10%;
+            animation: nebulaDrift 25s ease-in-out infinite alternate-reverse;
+        }
+        .nebula-3 {
+            width: 350px; height: 300px;
+            background: radial-gradient(circle, #4a3f8a, transparent);
+            bottom: 30%; left: 60%;
+            animation: nebulaDrift 18s ease-in-out infinite alternate;
+        }
+        @keyframes nebulaDrift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, -20px) scale(1.1); }
+        }
+
+        /* --- 3. STARS (3 parallax layers) --- */
+        .star-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            transition: transform 0.3s ease-out;
+        }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: twinkle var(--duration) infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.3); }
+        }
+
+        /* --- 4. SHOOTING STARS --- */
+        .shooting-star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            z-index: 1;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 60px;
+            height: 1.5px;
+            background: linear-gradient(to left, rgba(255,255,255,0.8), transparent);
+            transform-origin: right center;
+            transform: rotate(0deg) translateX(-60px);
+        }
+        @keyframes shoot {
+            0% { opacity: 0; transform: translate(0, 0) rotate(-35deg); }
+            5% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-400px, 250px) rotate(-35deg); }
+        }
+
+        /* --- 5. EARTH + ATMOSPHERE GLOW --- */
+        .earth-wrapper {
+            position: absolute;
+            top: 85%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+        .earth-atmosphere-glow {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 252vw;
+            height: 252vw;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow:
+                0 -4px 20px rgba(80, 200, 255, 0.15),
+                0 -8px 40px rgba(80, 200, 255, 0.08),
+                0 -2px 8px rgba(120, 220, 255, 0.2);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .earth {
+            position: relative;
+            width: 250vw;
+            height: 250vw;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.1) 0%, transparent 40%),
+                radial-gradient(circle at 30% 30%, var(--earth-detail) 0%, transparent 20%),
+                radial-gradient(circle at 70% 40%, var(--earth-detail) 0%, transparent 25%),
+                var(--earth-base);
+            box-shadow: 0 -10px 100px var(--earth-atmosphere);
+            z-index: 1;
+        }
+
+        /* --- 6. ROCKET CONTAINER --- */
+        .rocket-container {
+            position: absolute;
+            top: 25%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-style: preserve-3d;
+            transition: transform 0.15s ease-out;
+        }
+
+        /* Float + engine vibration combined */
+        .rocket-container.idle {
+            animation: floatAndVibrate 4s ease-in-out infinite;
+        }
+        @keyframes floatAndVibrate {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-10px) translateX(0.5px); }
+            25.5% { transform: translateY(-10px) translateX(-0.5px); }
+            50% { transform: translateY(-20px) translateX(0.5px); }
+            50.5% { transform: translateY(-20px) translateX(-0.5px); }
+            75% { transform: translateY(-10px) translateX(0.5px); }
+            75.5% { transform: translateY(-10px) translateX(-0.5px); }
+        }
+
+        /* Launch animation */
+        .rocket-container.launching {
+            animation: launch 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        @keyframes launch {
+            0% { transform: translateY(0) scale(1); }
+            30% { transform: translateY(10px) scale(1); }
+            100% { transform: translateY(-120vh) scale(0.6); }
+        }
+        .rocket-container.returning {
+            animation: returnFromBelow 2.5s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
+        }
+        @keyframes returnFromBelow {
+            0% { transform: translateY(120vh) scale(0.4); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Camera shake */
+        .scene.shake {
+            animation: cameraShake 0.6s ease-out;
+        }
+        @keyframes cameraShake {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-3px, 2px); }
+            20% { transform: translate(3px, -2px); }
+            30% { transform: translate(-2px, 3px); }
+            40% { transform: translate(2px, -1px); }
+            50% { transform: translate(-1px, 2px); }
+            60% { transform: translate(1px, -1px); }
+            80% { transform: translate(0, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* --- 7. ROCKET PARTS --- */
+        .rocket-body {
+            position: relative;
+            width: 80px;
+            height: 160px;
+            background: linear-gradient(to right, var(--rocket-body) 40%, var(--rocket-shadow));
+            border-radius: 50% 50% 10% 10%;
+            z-index: 5;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Window with inner glow */
+        .window {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 35px;
+            background: radial-gradient(circle at 40% 40%, #3a4a5c, #111);
+            border: 3px solid #666;
+            border-radius: 50%;
+            box-shadow:
+                0 0 15px rgba(100, 180, 255, 0.3),
+                0 0 30px rgba(100, 180, 255, 0.1),
+                inset 0 0 10px rgba(100, 180, 255, 0.2);
+            animation: windowPulse 3s ease-in-out infinite;
+        }
+        @keyframes windowPulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(100, 180, 255, 0.3), 0 0 30px rgba(100, 180, 255, 0.1), inset 0 0 10px rgba(100, 180, 255, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(100, 180, 255, 0.5), 0 0 40px rgba(100, 180, 255, 0.2), inset 0 0 15px rgba(100, 180, 255, 0.35); }
+        }
+
+        .fin {
+            position: absolute;
+            bottom: 20px;
+            width: 30px;
+            height: 50px;
+            background: var(--rocket-dark);
+            z-index: 4;
+        }
+        .fin.left { left: -25px; border-radius: 80% 0 0 100%; transform: rotate(-10deg); }
+        .fin.right { right: -25px; border-radius: 0 80% 100% 0; transform: rotate(10deg); }
+        .fin-center {
+            position: absolute;
+            bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 50px; background: var(--rocket-dark);
+            z-index: 6;
+        }
+
+        /* --- 8. EXHAUST (Colorized) --- */
+        .exhaust-visuals {
+            position: absolute;
+            top: 155px;
+            width: 60px;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .flame-core {
+            position: absolute; top: 0;
+            width: 18px;
+            height: 300px;
+            background: linear-gradient(to bottom,
+                #ffffff 0%,
+                #b0d4ff 15%,
+                rgba(80, 200, 255, 0.6) 45%,
+                rgba(80, 200, 255, 0) 100%
+            );
+            border-radius: 0 0 50% 50%;
+            filter: blur(4px);
+            animation: burn 0.1s infinite alternate;
+            transition: height 0.4s ease-out;
+        }
+        .flame-outer {
+            position: absolute; top: 0;
+            width: 40px;
+            height: 380px;
+            background: linear-gradient(to bottom,
+                rgba(180, 220, 255, 0.8) 0%,
+                rgba(80, 200, 255, 0.4) 35%,
+                rgba(80, 200, 255, 0.1) 65%,
+                transparent 100%
+            );
+            border-radius: 0 0 50% 50%;
+            filter: blur(10px);
+            opacity: 0.6;
+            animation: burn 0.15s infinite alternate-reverse;
+            transition: height 0.4s ease-out;
+        }
+
+        /* Exhaust ambient glow */
+        .exhaust-glow {
+            position: absolute;
+            top: 155px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(80, 200, 255, 0.12), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(20px);
+            transition: opacity 0.4s;
+        }
+
+        @keyframes burn {
+            0% { transform: scaleX(1); opacity: 1; }
+            100% { transform: scaleX(0.95); opacity: 0.9; }
+        }
+
+        /* Launch-intensified exhaust */
+        .rocket-container.launching .flame-core {
+            height: 600px !important;
+            width: 24px;
+            filter: blur(6px);
+        }
+        .rocket-container.launching .flame-outer {
+            height: 750px !important;
+            width: 55px;
+            opacity: 0.9;
+        }
+
+        /* --- 9. EXHAUST TRIGGER --- */
+        .exhaust-trigger {
+            position: absolute;
+            top: 150px;
+            width: 80px;
+            height: 600px;
+            z-index: 20;
+            background: transparent;
+            cursor: pointer;
+        }
+        .exhaust-trigger:hover ~ .exhaust-visuals .flame-core { height: 500px; }
+        .exhaust-trigger:hover ~ .exhaust-visuals .flame-outer { height: 600px; }
+
+        /* --- 10. SPRINKLES --- */
+        .sprinkle {
+            position: absolute;
+            width: 3px; height: 3px;
+            background: white;
+            box-shadow: 0 0 6px white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+        }
+        @keyframes fall {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        /* --- 11. SMOKE PARTICLES --- */
+        .smoke {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0;
+        }
+        @keyframes smokeDrift {
+            0% { opacity: 0.3; transform: translate(0, 0) scale(0.5); }
+            100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(2); }
+        }
+
+        /* --- 12. CLICK HINT --- */
+        .click-hint {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 160px;
+            z-index: 25;
+            cursor: pointer;
+            border-radius: 50% 50% 10% 10%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="scene" id="scene">
+    <!-- Nebula clouds -->
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <!-- Star layers (parallax) -->
+    <div class="star-layer" id="star-layer-1" data-depth="0.02"></div>
+    <div class="star-layer" id="star-layer-2" data-depth="0.05"></div>
+    <div class="star-layer" id="star-layer-3" data-depth="0.08"></div>
+
+    <!-- Shooting stars container -->
+    <div id="shooting-star-container"></div>
+
+    <!-- Earth -->
+    <div class="earth-wrapper">
+        <div class="earth-atmosphere-glow"></div>
+        <div class="earth"></div>
+    </div>
+
+    <!-- Rocket -->
+    <div class="rocket-container idle" id="rocket">
+        <div class="fin left"></div>
+        <div class="fin right"></div>
+        <div class="rocket-body">
+            <div class="window"></div>
+            <div class="fin-center"></div>
+        </div>
+
+        <div class="exhaust-glow"></div>
+        <div class="exhaust-visuals">
+            <div class="flame-outer"></div>
+            <div class="flame-core"></div>
+        </div>
+
+        <div class="exhaust-trigger" id="trigger"></div>
+        <div class="click-hint" id="clickHint"></div>
+    </div>
+</div>
+
+<script>
+    const scene = document.getElementById('scene');
+    const rocket = document.getElementById('rocket');
+    const trigger = document.getElementById('trigger');
+    const clickHint = document.getElementById('clickHint');
+    const starLayers = document.querySelectorAll('.star-layer');
+    let isLaunching = false;
+
+    /* ========== 1. STARS (3 parallax layers) ========== */
+    const starCounts = [50, 60, 40];
+    starLayers.forEach((layer, idx) => {
+        for (let i = 0; i < starCounts[idx]; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 85 + '%';
+            const size = Math.random() * (1.5 + idx * 0.5) + 0.5;
+            star.style.width = size + 'px';
+            star.style.height = size + 'px';
+            star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+            star.style.animationDelay = Math.random() * 5 + 's';
+            layer.appendChild(star);
+        }
+    });
+
+    /* ========== 2. PARALLAX (stars + rocket tilt) ========== */
+    let mouseX = 0.5, mouseY = 0.5;
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX / window.innerWidth;
+        mouseY = e.clientY / window.innerHeight;
+
+        // Star parallax
+        starLayers.forEach(layer => {
+            const depth = parseFloat(layer.dataset.depth);
+            const moveX = (mouseX - 0.5) * depth * 100;
+            const moveY = (mouseY - 0.5) * depth * 60;
+            layer.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        });
+
+        // Rocket tilt toward cursor
+        if (!isLaunching) {
+            const tiltX = (mouseX - 0.5) * 8;
+            const tiltY = (mouseY - 0.5) * 4;
+            rocket.style.setProperty('--tiltX', tiltX + 'deg');
+            rocket.style.setProperty('--tiltY', tiltY + 'deg');
+        }
+    });
+
+    // Apply tilt via animation frame
+    function applyTilt() {
+        if (!isLaunching && rocket.classList.contains('idle')) {
+            const currentTransform = getComputedStyle(rocket).transform;
+            // We layer tilt using a wrapper approach via CSS custom properties
+        }
+        requestAnimationFrame(applyTilt);
+    }
+
+    /* ========== 3. SHOOTING STARS ========== */
+    const shootingContainer = document.getElementById('shooting-star-container');
+
+    function createShootingStar() {
+        const star = document.createElement('div');
+        star.classList.add('shooting-star');
+        star.style.left = (Math.random() * 60 + 20) + '%';
+        star.style.top = (Math.random() * 40) + '%';
+
+        const duration = Math.random() * 1.5 + 0.8;
+        star.style.animation = `shoot ${duration}s linear forwards`;
+
+        shootingContainer.appendChild(star);
+        setTimeout(() => star.remove(), duration * 1000 + 100);
+    }
+
+    // Random shooting stars
+    function scheduleShootingStar() {
+        const delay = Math.random() * 4000 + 2000;
+        setTimeout(() => {
+            createShootingStar();
+            scheduleShootingStar();
+        }, delay);
+    }
+    scheduleShootingStar();
+
+    /* ========== 4. SPRINKLES ========== */
+    let isHovering = false;
+
+    trigger.addEventListener('mouseenter', () => isHovering = true);
+    trigger.addEventListener('mouseleave', () => isHovering = false);
+
+    trigger.addEventListener('mousemove', (e) => {
+        if (!isHovering) return;
+        for (let i = 0; i < 5; i++) createSprinkle(e.clientX, e.clientY);
+    });
+
+    function createSprinkle(x, y) {
+        const s = document.createElement('div');
+        s.classList.add('sprinkle');
+
+        const ox = (Math.random() - 0.5) * 30;
+        const oy = (Math.random() - 0.5) * 30;
+        s.style.left = (x + ox) + 'px';
+        s.style.top = (y + oy) + 'px';
+
+        // Occasional colored sprinkle
+        if (Math.random() > 0.7) {
+            const colors = ['#50c8ff', '#4a9eff', '#b0d4ff', '#78dcff'];
+            const c = colors[Math.floor(Math.random() * colors.length)];
+            s.style.background = c;
+            s.style.boxShadow = `0 0 6px ${c}`;
+        }
+
+        const tx = (Math.random() - 0.5) * 150 + 'px';
+        const ty = (Math.random() * 300 + 100) + 'px';
+        s.style.setProperty('--tx', tx);
+        s.style.setProperty('--ty', ty);
+
+        const dur = Math.random() * 0.7 + 0.5;
+        s.style.animation = `fall ${dur}s linear forwards`;
+
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), dur * 1000 + 100);
+    }
+
+    /* ========== 5. SMOKE TRAIL ========== */
+    let smokeInterval;
+
+    function startSmoke() {
+        smokeInterval = setInterval(() => {
+            if (isLaunching) return;
+            createSmoke();
+        }, 120);
+    }
+
+    function createSmoke() {
+        const smoke = document.createElement('div');
+        smoke.classList.add('smoke');
+
+        const rocketRect = rocket.getBoundingClientRect();
+        const cx = rocketRect.left + rocketRect.width / 2;
+        const cy = rocketRect.top + 180;
+
+        smoke.style.left = (cx + (Math.random() - 0.5) * 20) + 'px';
+        smoke.style.top = cy + 'px';
+
+        const size = Math.random() * 15 + 8;
+        smoke.style.width = size + 'px';
+        smoke.style.height = size + 'px';
+        smoke.style.background = `rgba(${150 + Math.random()*50}, ${150 + Math.random()*50}, ${160 + Math.random()*50}, 0.3)`;
+
+        const sx = (Math.random() - 0.5) * 80 + 'px';
+        const sy = (Math.random() * 120 + 60) + 'px';
+        smoke.style.setProperty('--sx', sx);
+        smoke.style.setProperty('--sy', sy);
+
+        const dur = Math.random() * 1.5 + 1;
+        smoke.style.animation = `smokeDrift ${dur}s ease-out forwards`;
+
+        document.body.appendChild(smoke);
+        setTimeout(() => smoke.remove(), dur * 1000 + 100);
+    }
+
+    startSmoke();
+
+    /* ========== 6. CLICK TO LAUNCH ========== */
+    clickHint.addEventListener('click', () => {
+        if (isLaunching) return;
+        isLaunching = true;
+
+        // Camera shake
+        scene.classList.add('shake');
+        setTimeout(() => scene.classList.remove('shake'), 600);
+
+        // Burst of sprinkles
+        const rocketRect = rocket.getBoundingClientRect();
+        const cx = rocketRect.left + rocketRect.width / 2;
+        const cy = rocketRect.top + 180;
+        for (let i = 0; i < 40; i++) {
+            setTimeout(() => createSprinkle(cx, cy), i * 20);
+        }
+
+        // Launch
+        rocket.classList.remove('idle');
+        rocket.classList.add('launching');
+
+        // After rocket leaves screen, bring it back
+        setTimeout(() => {
+            rocket.classList.remove('launching');
+            rocket.classList.add('returning');
+
+            // Burst on re-entry
+            setTimeout(() => {
+                const rect2 = rocket.getBoundingClientRect();
+                const cx2 = rect2.left + rect2.width / 2;
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => createSprinkle(cx2, window.innerHeight - 100), i * 30);
+                }
+            }, 500);
+
+            setTimeout(() => {
+                rocket.classList.remove('returning');
+                rocket.classList.add('idle');
+                isLaunching = false;
+            }, 2500);
+        }, 2200);
+    });
+</script>
+
+</body>
+</html>
