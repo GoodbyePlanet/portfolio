@@ -41,10 +41,10 @@
         [data-theme="light"] {
             --bg-color: #e8ebf0;
             --bg-gradient: #d0d4dc;
-            --earth-base: #1c1f26;
-            --earth-detail: #2a2e36;
-            --earth-atmosphere: rgba(255, 255, 255, 0.05);
-            --earth-highlight: rgba(255,255,255,0.06);
+            --earth-base: #e0e3e8;
+            --earth-detail: #d0d3da;
+            --earth-atmosphere: rgba(0, 0, 0, 0.05);
+            --earth-highlight: rgba(255,255,255,0.1);
             --rocket-body: #e6e6e6;
             --rocket-shadow: #999999;
             --rocket-dark: #151515;
@@ -53,9 +53,9 @@
             --star-peak-opacity: 0.4;
             --nebula-opacity: 0.05;
             --shooting-star-color: rgba(80,80,80,0.6);
-            --atmosphere-glow: rgba(0, 0, 0, 0.1);
-            --atmosphere-glow-md: rgba(0, 0, 0, 0.05);
-            --atmosphere-glow-sm: rgba(0, 0, 0, 0.12);
+            --atmosphere-glow: rgba(0, 0, 0, 0.3);
+            --atmosphere-glow-md: rgba(0, 0, 0, 0.15);
+            --atmosphere-glow-sm: rgba(0, 0, 0, 0.35);
             --window-bg: #111;
             --window-border: #666;
             --fin-center-color: #151515;
@@ -66,7 +66,7 @@
             --flame-outer-mid: rgba(20, 20, 20, 0.3);
             --flame-outer-end: rgba(0, 0, 0, 0.1);
             --exhaust-glow: rgba(50, 50, 50, 0.1);
-            --sprinkle-color: #333;
+            --sprinkle-color: #000000;
             --smoke-opacity: 0.2;
         }
 
@@ -590,13 +590,6 @@
         s.style.left = (x + ox) + 'px';
         s.style.top = (y + oy) + 'px';
 
-        // Occasional colored sprinkle
-        if (Math.random() > 0.7) {
-            const colors = ['#ffffff', '#cccccc', '#aaaaaa', '#dddddd'];
-            const c = colors[Math.floor(Math.random() * colors.length)];
-            s.style.background = c;
-            s.style.boxShadow = `0 0 6px ${c}`;
-        }
 
         const tx = (Math.random() - 0.5) * 150 + 'px';
         const ty = (Math.random() * 300 + 100) + 'px';
