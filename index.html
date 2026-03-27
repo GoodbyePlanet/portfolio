@@ -36,6 +36,16 @@
             --exhaust-glow: rgba(200, 200, 200, 0.1);
             --sprinkle-color: white;
             --smoke-opacity: 0.3;
+
+            /* HUD Panel */
+            --hud-border: rgba(255, 255, 255, 0.15);
+            --hud-glow: rgba(255, 255, 255, 0.05);
+            --hud-bg: rgba(28, 31, 38, 0.7);
+            --hud-text: rgba(230, 230, 230, 0.9);
+            --hud-text-dim: rgba(200, 200, 200, 0.5);
+            --hud-label: rgba(180, 180, 180, 0.4);
+            --hud-scanline: rgba(255, 255, 255, 0.02);
+            --hud-cursor: rgba(230, 230, 230, 0.8);
         }
 
         [data-theme="light"] {
@@ -68,6 +78,16 @@
             --exhaust-glow: rgba(50, 50, 50, 0.1);
             --sprinkle-color: #000000;
             --smoke-opacity: 0.2;
+
+            /* HUD Panel */
+            --hud-border: rgba(60, 60, 70, 0.5);
+            --hud-glow: rgba(60, 60, 70, 0.15);
+            --hud-bg: rgba(220, 225, 235, 0.6);
+            --hud-text: rgba(30, 35, 45, 0.9);
+            --hud-text-dim: rgba(30, 35, 45, 0.5);
+            --hud-label: rgba(30, 35, 45, 0.35);
+            --hud-scanline: rgba(30, 35, 45, 0.03);
+            --hud-cursor: rgba(30, 35, 45, 0.8);
         }
 
         body, html {
@@ -430,7 +450,158 @@
             100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(2); }
         }
 
-        /* --- 12. CLICK HINT --- */
+        /* --- 12. HUD TERMINAL PANEL --- */
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        .hud-panel {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 50;
+            width: 320px;
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            pointer-events: none;
+        }
+
+        .hud-frame {
+            position: relative;
+            border: 1px solid var(--hud-border);
+            background: var(--hud-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 20px 18px 16px;
+            box-shadow:
+                0 0 15px var(--hud-glow),
+                inset 0 0 15px var(--hud-glow);
+            transition: border-color 0.8s ease, background 0.8s ease, box-shadow 0.8s ease;
+        }
+
+        /* Corner brackets */
+        .hud-frame::before,
+        .hud-frame::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-color: var(--hud-text);
+            transition: border-color 0.8s ease;
+        }
+        .hud-frame::before {
+            top: -1px;
+            left: -1px;
+            border-top: 2px solid;
+            border-left: 2px solid;
+        }
+        .hud-frame::after {
+            top: -1px;
+            right: -1px;
+            border-top: 2px solid;
+            border-right: 2px solid;
+        }
+        .hud-corner-bl,
+        .hud-corner-br {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-color: var(--hud-text);
+            transition: border-color 0.8s ease;
+        }
+        .hud-corner-bl {
+            bottom: -1px;
+            left: -1px;
+            border-bottom: 2px solid;
+            border-left: 2px solid;
+        }
+        .hud-corner-br {
+            bottom: -1px;
+            right: -1px;
+            border-bottom: 2px solid;
+            border-right: 2px solid;
+        }
+
+        /* Scanline overlay */
+        .hud-scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                var(--hud-scanline) 2px,
+                var(--hud-scanline) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Header */
+        .hud-header {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--hud-label);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--hud-border);
+            transition: color 0.8s ease, border-color 0.8s ease;
+        }
+        .hud-header span {
+            color: var(--hud-text);
+            transition: color 0.8s ease;
+        }
+
+        /* Content rows */
+        .hud-row {
+            margin-bottom: 6px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--hud-text);
+            opacity: 0;
+            transition: color 0.8s ease;
+        }
+        .hud-row.visible {
+            opacity: 1;
+        }
+        .hud-label {
+            color: var(--hud-text-dim);
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: color 0.8s ease;
+        }
+        .hud-value {
+            display: inline;
+        }
+
+        /* Typewriter cursor */
+        .hud-cursor {
+            display: inline-block;
+            width: 7px;
+            height: 14px;
+            background: var(--hud-cursor);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 0.8s step-end infinite;
+            transition: background 0.8s ease;
+        }
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Pulse glow on the border */
+        .hud-frame {
+            animation: hudPulse 4s ease-in-out infinite;
+        }
+        @keyframes hudPulse {
+            0%, 100% { box-shadow: 0 0 15px var(--hud-glow), inset 0 0 15px var(--hud-glow); }
+            50% { box-shadow: 0 0 25px var(--hud-glow), inset 0 0 20px var(--hud-glow); }
+        }
+
+        /* --- 13. CLICK HINT --- */
         .click-hint {
             position: absolute;
             top: 0;
@@ -447,6 +618,33 @@
 <body>
 
 <div class="scene" id="scene">
+    <!-- HUD About Panel -->
+    <div class="hud-panel" id="hudPanel">
+        <div class="hud-frame">
+            <div class="hud-scanlines"></div>
+            <div class="hud-corner-bl"></div>
+            <div class="hud-corner-br"></div>
+            <div class="hud-header">&gt; <span>PILOT_INFO</span></div>
+            <div class="hud-row" id="hud-row-0">
+                <div class="hud-label">Name</div>
+                <div class="hud-value" data-text="Nemanja Vasic"></div>
+            </div>
+            <div class="hud-row" id="hud-row-1">
+                <div class="hud-label">Role</div>
+                <div class="hud-value" data-text="Full-Stack Developer"></div>
+            </div>
+            <div class="hud-row" id="hud-row-2">
+                <div class="hud-label">Mission</div>
+                <div class="hud-value" data-text="Building elegant digital experiences from orbit."></div>
+            </div>
+            <div class="hud-row" id="hud-row-3">
+                <div class="hud-label">Status</div>
+                <div class="hud-value" data-text="Online // Ready for launch"></div>
+            </div>
+            <span class="hud-cursor" id="hudCursor"></span>
+        </div>
+    </div>
+
     <!-- Nebula clouds -->
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -693,6 +891,51 @@
             }, 2500);
         }, 2200);
     });
+
+    /* ========== 7. HUD TYPEWRITER ========== */
+    (function initHUD() {
+        const rows = document.querySelectorAll('.hud-row');
+        const cursor = document.getElementById('hudCursor');
+        let currentRow = 0;
+
+        function typeRow(row, callback) {
+            const valueEl = row.querySelector('.hud-value');
+            const fullText = valueEl.getAttribute('data-text');
+            let charIndex = 0;
+
+            row.classList.add('visible');
+            // Move cursor next to this row's value
+            valueEl.appendChild(cursor);
+
+            function typeChar() {
+                if (charIndex < fullText.length) {
+                    valueEl.textContent = fullText.substring(0, charIndex + 1);
+                    valueEl.appendChild(cursor);
+                    charIndex++;
+                    setTimeout(typeChar, 35 + Math.random() * 25);
+                } else {
+                    setTimeout(callback, 300);
+                }
+            }
+            typeChar();
+        }
+
+        function typeNextRow() {
+            if (currentRow < rows.length) {
+                typeRow(rows[currentRow], () => {
+                    currentRow++;
+                    typeNextRow();
+                });
+            } else {
+                // Typing done — park cursor at the end
+                const lastValue = rows[rows.length - 1].querySelector('.hud-value');
+                lastValue.appendChild(cursor);
+            }
+        }
+
+        // Start after a short delay
+        setTimeout(typeNextRow, 800);
+    })();
 </script>
 
 </body>
