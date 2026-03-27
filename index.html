@@ -8,12 +8,66 @@
         /* --- 1. PALETTE --- */
         :root {
             --bg-color: #21242c;
-            --earth-base: #1a1a1a;
-            --earth-detail: #333333;
-            --earth-atmosphere: rgba(255, 255, 255, 0.1);
+            --bg-gradient: #353942;
+            --earth-base: #1c1f26;
+            --earth-detail: #2a2e36;
+            --earth-atmosphere: rgba(255, 255, 255, 0.05);
+            --earth-highlight: rgba(255,255,255,0.06);
             --rocket-body: #e6e6e6;
             --rocket-shadow: #999999;
             --rocket-dark: #151515;
+            --star-color: white;
+            --star-opacity: 0.1;
+            --star-peak-opacity: 0.8;
+            --nebula-opacity: 0.08;
+            --shooting-star-color: rgba(255,255,255,0.8);
+            --atmosphere-glow: rgba(255, 255, 255, 0.15);
+            --atmosphere-glow-md: rgba(255, 255, 255, 0.08);
+            --atmosphere-glow-sm: rgba(255, 255, 255, 0.2);
+            --window-bg: #111;
+            --window-border: #666;
+            --fin-center-color: var(--rocket-dark);
+            --flame-core-top: #ffffff;
+            --flame-core-mid: rgba(200, 200, 200, 0.8);
+            --flame-core-end: rgba(150, 150, 150, 0.4);
+            --flame-outer-top: rgba(200, 200, 200, 0.7);
+            --flame-outer-mid: rgba(100, 100, 100, 0.3);
+            --flame-outer-end: rgba(50, 50, 50, 0.1);
+            --exhaust-glow: rgba(200, 200, 200, 0.1);
+            --sprinkle-color: white;
+            --smoke-opacity: 0.3;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #e8ebf0;
+            --bg-gradient: #d0d4dc;
+            --earth-base: #1c1f26;
+            --earth-detail: #2a2e36;
+            --earth-atmosphere: rgba(255, 255, 255, 0.05);
+            --earth-highlight: rgba(255,255,255,0.06);
+            --rocket-body: #e6e6e6;
+            --rocket-shadow: #999999;
+            --rocket-dark: #151515;
+            --star-color: #555;
+            --star-opacity: 0.08;
+            --star-peak-opacity: 0.4;
+            --nebula-opacity: 0.05;
+            --shooting-star-color: rgba(80,80,80,0.6);
+            --atmosphere-glow: rgba(0, 0, 0, 0.1);
+            --atmosphere-glow-md: rgba(0, 0, 0, 0.05);
+            --atmosphere-glow-sm: rgba(0, 0, 0, 0.12);
+            --window-bg: #111;
+            --window-border: #666;
+            --fin-center-color: #151515;
+            --flame-core-top: #333333;
+            --flame-core-mid: rgba(40, 40, 40, 0.7);
+            --flame-core-end: rgba(20, 20, 20, 0.4);
+            --flame-outer-top: rgba(50, 50, 50, 0.6);
+            --flame-outer-mid: rgba(20, 20, 20, 0.3);
+            --flame-outer-end: rgba(0, 0, 0, 0.1);
+            --exhaust-glow: rgba(50, 50, 50, 0.1);
+            --sprinkle-color: #333;
+            --smoke-opacity: 0.2;
         }
 
         body, html {
@@ -23,7 +77,8 @@
             height: 100%;
             overflow: hidden;
             background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 80%, #353942 0%, var(--bg-color) 70%);
+            background-image: radial-gradient(circle at 50% 80%, var(--bg-gradient) 0%, var(--bg-color) 70%);
+            transition: background-color 0.8s ease, background-image 0.8s ease;
             font-family: sans-serif;
         }
 
@@ -43,7 +98,8 @@
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: 0.08;
+            opacity: var(--nebula-opacity);
+            transition: opacity 0.8s ease;
             z-index: 0;
             pointer-events: none;
         }
@@ -81,14 +137,14 @@
         }
         .star {
             position: absolute;
-            background: white;
+            background: var(--star-color);
             border-radius: 50%;
-            opacity: 0.1;
+            opacity: var(--star-opacity);
             animation: twinkle var(--duration) infinite ease-in-out;
         }
         @keyframes twinkle {
-            0%, 100% { opacity: 0.1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.3); }
+            0%, 100% { opacity: var(--star-opacity); transform: scale(1); }
+            50% { opacity: var(--star-peak-opacity); transform: scale(1.3); }
         }
 
         /* --- 4. SHOOTING STARS --- */
@@ -96,7 +152,7 @@
             position: absolute;
             width: 3px;
             height: 3px;
-            background: white;
+            background: var(--star-color);
             border-radius: 50%;
             z-index: 1;
             opacity: 0;
@@ -108,7 +164,7 @@
             top: 0; left: 0;
             width: 60px;
             height: 1.5px;
-            background: linear-gradient(to left, rgba(255,255,255,0.8), transparent);
+            background: linear-gradient(to left, var(--shooting-star-color), transparent);
             transform-origin: right center;
             transform: rotate(0deg) translateX(-60px);
         }
@@ -137,9 +193,9 @@
             border-radius: 50%;
             background: transparent;
             box-shadow:
-                0 -4px 20px rgba(255, 255, 255, 0.15),
-                0 -8px 40px rgba(255, 255, 255, 0.08),
-                0 -2px 8px rgba(255, 255, 255, 0.2);
+                0 -4px 20px var(--atmosphere-glow),
+                0 -8px 40px var(--atmosphere-glow-md),
+                0 -2px 8px var(--atmosphere-glow-sm);
             pointer-events: none;
             z-index: 2;
         }
@@ -149,11 +205,12 @@
             height: 250vw;
             border-radius: 50%;
             background:
-                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.06) 0%, transparent 40%),
-                radial-gradient(circle at 30% 30%, #2a2e36 0%, transparent 20%),
-                radial-gradient(circle at 70% 40%, #2a2e36 0%, transparent 25%),
-                #1c1f26;
-            box-shadow: 0 -10px 100px rgba(255, 255, 255, 0.05);
+                radial-gradient(circle at 50% 0%, var(--earth-highlight) 0%, transparent 40%),
+                radial-gradient(circle at 30% 30%, var(--earth-detail) 0%, transparent 20%),
+                radial-gradient(circle at 70% 40%, var(--earth-detail) 0%, transparent 25%),
+                var(--earth-base);
+            box-shadow: 0 -10px 100px var(--earth-atmosphere);
+            transition: background 0.8s ease, box-shadow 0.8s ease;
             z-index: 1;
         }
 
@@ -227,6 +284,7 @@
             z-index: 5;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: background 0.8s ease;
         }
 
         .window {
@@ -236,8 +294,8 @@
             transform: translateX(-50%);
             width: 35px;
             height: 35px;
-            background: #111;
-            border: 3px solid #666;
+            background: var(--window-bg);
+            border: 3px solid var(--window-border);
             border-radius: 50%;
         }
 
@@ -254,7 +312,7 @@
         .fin-center {
             position: absolute;
             bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 4px; height: 50px; background: #0e1e2e;
+            width: 4px; height: 50px; background: var(--fin-center-color);
             z-index: 6;
         }
 
@@ -274,10 +332,10 @@
             width: 24px;
             height: 400px;
             background: linear-gradient(to bottom,
-                #ffffff 0%,
-                rgba(200, 200, 200, 0.8) 15%,
-                rgba(150, 150, 150, 0.4) 45%,
-                rgba(0, 0, 0, 0) 100%
+                var(--flame-core-top) 0%,
+                var(--flame-core-mid) 15%,
+                var(--flame-core-end) 45%,
+                transparent 100%
             );
             border-radius: 0 0 50% 50%;
             filter: blur(4px);
@@ -289,9 +347,9 @@
             width: 52px;
             height: 480px;
             background: linear-gradient(to bottom,
-                rgba(200, 200, 200, 0.7) 0%,
-                rgba(100, 100, 100, 0.3) 35%,
-                rgba(50, 50, 50, 0.1) 65%,
+                var(--flame-outer-top) 0%,
+                var(--flame-outer-mid) 35%,
+                var(--flame-outer-end) 65%,
                 transparent 100%
             );
             border-radius: 0 0 50% 50%;
@@ -307,7 +365,7 @@
             top: 155px;
             width: 200px;
             height: 200px;
-            background: radial-gradient(circle, rgba(200, 200, 200, 0.1), transparent 70%);
+            background: radial-gradient(circle, var(--exhaust-glow), transparent 70%);
             pointer-events: none;
             z-index: 0;
             filter: blur(20px);
@@ -348,8 +406,8 @@
         .sprinkle {
             position: absolute;
             width: 3px; height: 3px;
-            background: white;
-            box-shadow: 0 0 6px white;
+            background: var(--sprinkle-color);
+            box-shadow: 0 0 6px var(--sprinkle-color);
             border-radius: 50%;
             pointer-events: none;
             z-index: 100;
@@ -592,7 +650,9 @@
 
     startSmoke();
 
-    /* ========== 6. CLICK TO LAUNCH ========== */
+    /* ========== 6. CLICK TO LAUNCH + THEME SWITCH ========== */
+    let isDark = true;
+
     clickHint.addEventListener('click', () => {
         if (isLaunching) return;
         isLaunching = true;
@@ -612,6 +672,12 @@
         // Launch
         rocket.classList.remove('idle');
         rocket.classList.add('launching');
+
+        // Switch theme while rocket is off-screen
+        setTimeout(() => {
+            isDark = !isDark;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        }, 1800);
 
         // After rocket leaves screen, bring it back
         setTimeout(() => {
