@@ -1,32 +1,70 @@
-import { useEffect, useCallback, type RefObject } from 'react';
+import { useEffect, useCallback, useState, useRef, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import styles from './Particles.module.css';
+
+const SPREAD = 30;
+const DRIFT_X_RANGE = 150;
+const FALL_MIN = 100;
+const FALL_RANGE = 300;
+const MIN_DURATION = 0.5;
+const DURATION_RANGE = 0.7;
+const HOVER_BATCH = 5;
+const LAUNCH_COUNT = 40;
+const LAUNCH_INTERVAL = 20;
+const RETURN_COUNT = 20;
+const RETURN_INTERVAL = 30;
+const RETURN_DELAY = 500;
+const EXHAUST_OFFSET_Y = 180;
+const RETURN_OFFSET_Y = 100;
+
+interface Sprinkle {
+  id: number;
+  x: number;
+  y: number;
+  tx: string;
+  ty: string;
+  duration: number;
+}
 
 interface SprinklesProps {
   rocketRef: RefObject<HTMLDivElement | null>;
   phase: LaunchPhase;
 }
 
+let nextId = 0;
+
 export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
-  const createSprinkle = useCallback((x: number, y: number) => {
-    const s = document.createElement('div');
-    s.className = styles.sprinkle;
+  const [sprinkles, setSprinkles] = useState<Sprinkle[]>([]);
+  const timersRef = useRef<number[]>([]);
 
-    const ox = (Math.random() - 0.5) * 30;
-    const oy = (Math.random() - 0.5) * 30;
-    s.style.left = `${x + ox}px`;
-    s.style.top = `${y + oy}px`;
+  const spawn = useCallback((x: number, y: number) => {
+    const ox = (Math.random() - 0.5) * SPREAD;
+    const oy = (Math.random() - 0.5) * SPREAD;
+    const duration = Math.random() * DURATION_RANGE + MIN_DURATION;
 
-    const tx = `${(Math.random() - 0.5) * 150}px`;
-    const ty = `${Math.random() * 300 + 100}px`;
-    s.style.setProperty('--tx', tx);
-    s.style.setProperty('--ty', ty);
+    const sprinkle: Sprinkle = {
+      id: nextId++,
+      x: x + ox,
+      y: y + oy,
+      tx: `${(Math.random() - 0.5) * DRIFT_X_RANGE}px`,
+      ty: `${Math.random() * FALL_RANGE + FALL_MIN}px`,
+      duration,
+    };
 
-    const dur = Math.random() * 0.7 + 0.5;
-    s.style.animation = `sprinkleFall ${dur}s linear forwards`;
+    setSprinkles((prev) => [...prev, sprinkle]);
 
-    document.body.appendChild(s);
-    setTimeout(() => s.remove(), dur * 1000 + 100);
+    const timer = window.setTimeout(() => {
+      setSprinkles((prev) => prev.filter((s) => s.id !== sprinkle.id));
+    }, duration * 1000 + 100);
+
+    timersRef.current.push(timer);
+  }, []);
+
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   // Hover sprinkles on exhaust area
@@ -34,17 +72,16 @@ export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
     const rocket = rocketRef.current;
     if (!rocket) return;
 
-    const trigger = rocket.querySelector('[class*="exhaustTrigger"]');
+    const trigger = rocket.querySelector<HTMLElement>('[class*="exhaustTrigger"]');
     if (!trigger) return;
 
     let isHovering = false;
 
     const onEnter = () => { isHovering = true; };
     const onLeave = () => { isHovering = false; };
-    const onMove = (e: Event) => {
+    const onMove = (e: MouseEvent) => {
       if (!isHovering) return;
-      const me = e as MouseEvent;
-      for (let i = 0; i < 5; i++) createSprinkle(me.clientX, me.clientY);
+      for (let i = 0; i < HOVER_BATCH; i++) spawn(e.clientX, e.clientY);
     };
 
     trigger.addEventListener('mouseenter', onEnter);
@@ -56,7 +93,7 @@ export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
       trigger.removeEventListener('mouseleave', onLeave);
       trigger.removeEventListener('mousemove', onMove);
     };
-  }, [rocketRef, createSprinkle]);
+  }, [rocketRef, spawn]);
 
   // Burst sprinkles on launch
   useEffect(() => {
@@ -67,15 +104,15 @@ export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
 
     const rect = rocket.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
-    const cy = rect.top + 180;
+    const cy = rect.top + EXHAUST_OFFSET_Y;
 
     const timeouts: number[] = [];
-    for (let i = 0; i < 40; i++) {
-      timeouts.push(window.setTimeout(() => createSprinkle(cx, cy), i * 20));
+    for (let i = 0; i < LAUNCH_COUNT; i++) {
+      timeouts.push(window.setTimeout(() => spawn(cx, cy), i * LAUNCH_INTERVAL));
     }
 
     return () => timeouts.forEach(clearTimeout);
-  }, [phase, rocketRef, createSprinkle]);
+  }, [phase, rocketRef, spawn]);
 
   // Burst sprinkles on return
   useEffect(() => {
@@ -87,23 +124,33 @@ export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
       if (!rocket) return;
       const rect = rocket.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < RETURN_COUNT; i++) {
         timeouts.push(
-          window.setTimeout(() => createSprinkle(cx, window.innerHeight - 100), i * 30)
+          window.setTimeout(() => spawn(cx, window.innerHeight - RETURN_OFFSET_Y), i * RETURN_INTERVAL)
         );
       }
-    }, 500);
+    }, RETURN_DELAY);
 
     timeouts.push(burst);
     return () => timeouts.forEach(clearTimeout);
-  }, [phase, rocketRef, createSprinkle]);
+  }, [phase, rocketRef, spawn]);
 
-  return (
-    <style>{`
-      @keyframes sprinkleFall {
-        0% { transform: translate(0, 0) scale(1); opacity: 1; }
-        100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-      }
-    `}</style>
+  return createPortal(
+    <>
+      {sprinkles.map((s) => (
+        <div
+          key={s.id}
+          className={styles.sprinkle}
+          style={{
+            left: s.x,
+            top: s.y,
+            '--tx': s.tx,
+            '--ty': s.ty,
+            '--duration': `${s.duration}s`,
+          } as React.CSSProperties}
+        />
+      ))}
+    </>,
+    document.body
   );
 }
