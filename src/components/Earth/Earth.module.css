@@ -6,9 +6,30 @@
     z-index: 1;
 }
 
-.atmosphereGlow {
+/* ========== Layered atmosphere rim ========== */
+
+/* Outer halo — wide, faint */
+.atmosphereOuter {
     position: absolute;
-    top: -8px;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 254vw;
+    height: 254vw;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow:
+        0 -6px 60px rgba(100, 180, 255, 0.06),
+        0 -12px 120px rgba(100, 180, 255, 0.03);
+    pointer-events: none;
+    z-index: 4;
+    transition: box-shadow 0.8s ease;
+}
+
+/* Mid glow — medium spread */
+.atmosphereMid {
+    position: absolute;
+    top: -12px;
     left: 50%;
     transform: translateX(-50%);
     width: 252vw;
@@ -16,12 +37,32 @@
     border-radius: 50%;
     background: transparent;
     box-shadow:
-        0 -4px 20px var(--atmosphere-glow),
-        0 -8px 40px var(--atmosphere-glow-md),
-        0 -2px 8px var(--atmosphere-glow-sm);
+        0 -4px 30px var(--atmosphere-glow),
+        0 -8px 50px var(--atmosphere-glow-md);
     pointer-events: none;
-    z-index: 2;
+    z-index: 4;
+    transition: box-shadow 0.8s ease;
 }
+
+/* Inner edge — thin, bright */
+.atmosphereInner {
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250.5vw;
+    height: 250.5vw;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow:
+        0 -1px 4px var(--atmosphere-glow-sm),
+        0 -2px 10px var(--atmosphere-glow);
+    pointer-events: none;
+    z-index: 4;
+    transition: box-shadow 0.8s ease;
+}
+
+/* ========== Planet surface ========== */
 
 .earth {
     position: relative;
@@ -36,9 +77,49 @@
     box-shadow: 0 -10px 100px var(--earth-atmosphere);
     transition: background 0.8s ease, box-shadow 0.8s ease;
     z-index: 1;
+    overflow: hidden;
 }
 
-/* ---- Responsive ---- */
+/* ========== Terminator (day/night boundary) ========== */
+
+.terminator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(
+        105deg,
+        rgba(0, 0, 0, 0.35) 0%,
+        rgba(0, 0, 0, 0.2) 25%,
+        transparent 45%,
+        transparent 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+    transition: background 0.8s ease;
+}
+
+/* ========== Light theme adjustments ========== */
+
+[data-theme="light"] .terminator {
+    background: linear-gradient(
+        105deg,
+        rgba(0, 0, 0, 0.15) 0%,
+        rgba(0, 0, 0, 0.08) 25%,
+        transparent 45%,
+        transparent 100%
+    );
+}
+
+[data-theme="light"] .atmosphereOuter {
+    box-shadow:
+        0 -6px 60px rgba(0, 0, 0, 0.08),
+        0 -12px 120px rgba(0, 0, 0, 0.04);
+}
+
+/* ========== Responsive ========== */
 
 @media (max-width: 768px) {
     .earthWrapper {
@@ -50,9 +131,19 @@
         height: 300vw;
     }
 
-    .atmosphereGlow {
+    .atmosphereOuter {
+        width: 304vw;
+        height: 304vw;
+    }
+
+    .atmosphereMid {
         width: 302vw;
         height: 302vw;
+    }
+
+    .atmosphereInner {
+        width: 300.5vw;
+        height: 300.5vw;
     }
 }
 
@@ -66,8 +157,18 @@
         height: 350vw;
     }
 
-    .atmosphereGlow {
+    .atmosphereOuter {
+        width: 354vw;
+        height: 354vw;
+    }
+
+    .atmosphereMid {
         width: 352vw;
         height: 352vw;
+    }
+
+    .atmosphereInner {
+        width: 350.5vw;
+        height: 350.5vw;
     }
 }

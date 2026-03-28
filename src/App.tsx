@@ -4,7 +4,9 @@ import { useLaunchSequence } from './hooks/useLaunchSequence';
 import { Scene } from './components/Scene/Scene';
 import { Nebula } from './components/Nebula/Nebula';
 import { StarField } from './components/Stars/StarField';
+import { Constellations } from './components/Constellations/Constellations';
 import { ShootingStars } from './components/ShootingStars/ShootingStars';
+import { CursorTrail } from './components/CursorTrail/CursorTrail';
 import { Earth } from './components/Earth/Earth';
 import { Rocket } from './components/Rocket/Rocket';
 import { HudPanel } from './components/HUD/HudPanel';
@@ -24,7 +26,9 @@ export default function App() {
       </div>
       <Nebula />
       <StarField mouseRef={mouseRef} />
+      <Constellations mouseRef={mouseRef} />
       <ShootingStars />
+      <CursorTrail mouseRef={mouseRef} />
       <Earth />
       <Rocket phase={phase} mouseRef={mouseRef} onLaunch={launch} />
     </Scene>
