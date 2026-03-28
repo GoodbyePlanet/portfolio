@@ -108,7 +108,7 @@
     opacity: 1;
 }
 
-.hudSocials a {
+.hudSocialLink {
     pointer-events: auto;
     color: var(--hud-text-dim);
     text-decoration: none;
@@ -116,13 +116,14 @@
     font-size: 11px;
     letter-spacing: 1px;
     transition: color 0.3s ease;
+    cursor: pointer;
 }
 
-.hudSocials a:hover {
+.hudSocialLink:hover {
     color: var(--hud-text);
 }
 
-.hudSocials a::before {
+.hudSocialLink::before {
     content: '>';
     margin-right: 3px;
 }
@@ -174,7 +175,15 @@
 .projectName,
 .blogTitle {
     color: var(--hud-text);
-    transition: color 0.8s ease;
+    transition: color 0.3s ease;
+    pointer-events: auto;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.projectName:hover,
+.blogTitle:hover {
+    color: var(--hud-accent);
 }
 
 .projectTech,
@@ -191,6 +200,7 @@
     font-size: 11px;
     letter-spacing: 2px;
     text-transform: uppercase;
+    cursor: pointer;
     color: var(--hud-text-dim);
     text-decoration: none;
     pointer-events: auto;

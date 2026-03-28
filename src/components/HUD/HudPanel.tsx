@@ -23,7 +23,7 @@ export function HudPanel() {
 
   return (
     <div className={styles.hudPanel}>
-      <HudFrame title="PILOT_INFO">
+      <HudFrame title="INFO">
         {rows.map((row, i) => (
           <div
             key={i}
@@ -35,9 +35,14 @@ export function HudPanel() {
         ))}
         <div className={`${styles.hudSocials}${socialsVisible ? ` ${styles.hudSocialsVisible}` : ''}`}>
           {socials.map((s) => (
-            <a key={s.label} href={s.href} target="_blank" rel="noreferrer">
+            <span
+              key={s.label}
+              role="link"
+              className={styles.hudSocialLink}
+              onClick={() => window.open(s.href, '_blank', 'noopener,noreferrer')}
+            >
               {s.label}
-            </a>
+            </span>
           ))}
         </div>
       </HudFrame>
