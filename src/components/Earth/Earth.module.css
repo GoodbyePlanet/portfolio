@@ -1,0 +1,39 @@
+.earthWrapper {
+    position: absolute;
+    top: 85%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+.atmosphereGlow {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 252vw;
+    height: 252vw;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow:
+        0 -4px 20px var(--atmosphere-glow),
+        0 -8px 40px var(--atmosphere-glow-md),
+        0 -2px 8px var(--atmosphere-glow-sm);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.earth {
+    position: relative;
+    width: 250vw;
+    height: 250vw;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 0%, var(--earth-highlight) 0%, transparent 40%),
+        radial-gradient(circle at 30% 30%, var(--earth-detail) 0%, transparent 20%),
+        radial-gradient(circle at 70% 40%, var(--earth-detail) 0%, transparent 25%),
+        var(--earth-base);
+    box-shadow: 0 -10px 100px var(--earth-atmosphere);
+    transition: background 0.8s ease, box-shadow 0.8s ease;
+    z-index: 1;
+}

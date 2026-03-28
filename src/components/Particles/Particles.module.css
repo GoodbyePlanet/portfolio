@@ -1,0 +1,18 @@
+.sprinkle {
+    position: fixed;
+    width: 3px;
+    height: 3px;
+    background: var(--sprinkle-color);
+    box-shadow: 0 0 6px var(--sprinkle-color);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.smoke {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+}

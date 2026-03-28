@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+/* --- PALETTE --- */
+:root {
+    --bg-color: #21242c;
+    --bg-gradient: #353942;
+    --earth-base: #1c1f26;
+    --earth-detail: #2a2e36;
+    --earth-atmosphere: rgba(255, 255, 255, 0.05);
+    --earth-highlight: rgba(255,255,255,0.06);
+    --rocket-body: #e6e6e6;
+    --rocket-shadow: #999999;
+    --rocket-dark: #151515;
+    --star-color: white;
+    --star-opacity: 0.1;
+    --star-peak-opacity: 0.8;
+    --nebula-opacity: 0.08;
+    --shooting-star-color: rgba(255,255,255,0.8);
+    --atmosphere-glow: rgba(255, 255, 255, 0.15);
+    --atmosphere-glow-md: rgba(255, 255, 255, 0.08);
+    --atmosphere-glow-sm: rgba(255, 255, 255, 0.2);
+    --window-bg: #111;
+    --window-border: #666;
+    --fin-center-color: var(--rocket-dark);
+    --flame-core-top: #ffffff;
+    --flame-core-mid: rgba(200, 200, 200, 0.8);
+    --flame-core-end: rgba(150, 150, 150, 0.4);
+    --flame-outer-top: rgba(200, 200, 200, 0.7);
+    --flame-outer-mid: rgba(100, 100, 100, 0.3);
+    --flame-outer-end: rgba(50, 50, 50, 0.1);
+    --exhaust-glow: rgba(200, 200, 200, 0.1);
+    --sprinkle-color: white;
+    --smoke-opacity: 0.3;
+
+    /* HUD Panel */
+    --hud-border: rgba(255, 255, 255, 0.15);
+    --hud-glow: rgba(255, 255, 255, 0.05);
+    --hud-bg: rgba(28, 31, 38, 0.7);
+    --hud-text: rgba(230, 230, 230, 0.9);
+    --hud-text-dim: rgba(200, 200, 200, 0.5);
+    --hud-label: rgba(180, 180, 180, 0.4);
+    --hud-scanline: rgba(255, 255, 255, 0.02);
+    --hud-cursor: rgba(230, 230, 230, 0.8);
+}
+
+[data-theme="light"] {
+    --bg-color: #e8ebf0;
+    --bg-gradient: #d0d4dc;
+    --earth-base: #e0e3e8;
+    --earth-detail: #d0d3da;
+    --earth-atmosphere: rgba(0, 0, 0, 0.05);
+    --earth-highlight: rgba(255,255,255,0.1);
+    --rocket-body: #e6e6e6;
+    --rocket-shadow: #999999;
+    --rocket-dark: #151515;
+    --star-color: #555;
+    --star-opacity: 0.08;
+    --star-peak-opacity: 0.4;
+    --nebula-opacity: 0.05;
+    --shooting-star-color: rgba(80,80,80,0.6);
+    --atmosphere-glow: rgba(0, 0, 0, 0.3);
+    --atmosphere-glow-md: rgba(0, 0, 0, 0.15);
+    --atmosphere-glow-sm: rgba(0, 0, 0, 0.35);
+    --window-bg: #111;
+    --window-border: #666;
+    --fin-center-color: #151515;
+    --flame-core-top: #333333;
+    --flame-core-mid: rgba(40, 40, 40, 0.7);
+    --flame-core-end: rgba(20, 20, 20, 0.4);
+    --flame-outer-top: rgba(50, 50, 50, 0.6);
+    --flame-outer-mid: rgba(20, 20, 20, 0.3);
+    --flame-outer-end: rgba(0, 0, 0, 0.1);
+    --exhaust-glow: rgba(50, 50, 50, 0.1);
+    --sprinkle-color: #000000;
+    --smoke-opacity: 0.2;
+
+    /* HUD Panel */
+    --hud-border: rgba(60, 60, 70, 0.5);
+    --hud-glow: rgba(60, 60, 70, 0.15);
+    --hud-bg: rgba(220, 225, 235, 0.6);
+    --hud-text: rgba(30, 35, 45, 0.9);
+    --hud-text-dim: rgba(30, 35, 45, 0.5);
+    --hud-label: rgba(30, 35, 45, 0.35);
+    --hud-scanline: rgba(30, 35, 45, 0.03);
+    --hud-cursor: rgba(30, 35, 45, 0.8);
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    background-image: radial-gradient(circle at 50% 80%, var(--bg-gradient) 0%, var(--bg-color) 70%);
+    transition: background-color 0.8s ease, background-image 0.8s ease;
+    font-family: sans-serif;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+}

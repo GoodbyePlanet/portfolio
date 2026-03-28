@@ -1,0 +1,211 @@
+.rocketContainer {
+    position: absolute;
+    top: 25%;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
+}
+
+/* Float + engine vibration */
+.idle {
+    animation: floatAndVibrate 4s ease-in-out infinite;
+}
+
+@keyframes floatAndVibrate {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-10px) translateX(0.5px); }
+    25.5% { transform: translateY(-10px) translateX(-0.5px); }
+    50% { transform: translateY(-20px) translateX(0.5px); }
+    50.5% { transform: translateY(-20px) translateX(-0.5px); }
+    75% { transform: translateY(-10px) translateX(0.5px); }
+    75.5% { transform: translateY(-10px) translateX(-0.5px); }
+}
+
+/* Launch animation */
+.launching {
+    animation: launch 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes launch {
+    0% { transform: translateY(0) scale(1); }
+    30% { transform: translateY(10px) scale(1); }
+    100% { transform: translateY(-120vh) scale(0.6); }
+}
+
+.returning {
+    animation: returnFromBelow 2.5s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
+}
+
+@keyframes returnFromBelow {
+    0% { transform: translateY(120vh) scale(0.4); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Rocket body */
+.rocketBody {
+    position: relative;
+    width: 70px;
+    height: 180px;
+    background: linear-gradient(to right, var(--rocket-body) 40%, var(--rocket-shadow));
+    border-radius: 50% 50% 10% 10%;
+    z-index: 5;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: background 0.8s ease;
+}
+
+.window {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 35px;
+    height: 35px;
+    background: var(--window-bg);
+    border: 3px solid var(--window-border);
+    border-radius: 50%;
+}
+
+.fin {
+    position: absolute;
+    bottom: 20px;
+    width: 30px;
+    height: 50px;
+    background: var(--rocket-dark);
+    z-index: 4;
+}
+
+.finLeft {
+    left: -25px;
+    border-radius: 80% 0 0 100%;
+    transform: rotate(-10deg);
+}
+
+.finRight {
+    right: -25px;
+    border-radius: 0 80% 100% 0;
+    transform: rotate(10deg);
+}
+
+.finCenter {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 50px;
+    background: var(--fin-center-color);
+    z-index: 6;
+}
+
+/* Exhaust */
+.exhaustVisuals {
+    position: absolute;
+    top: 155px;
+    width: 60px;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.flameCore {
+    position: absolute;
+    top: 0;
+    width: 24px;
+    height: 400px;
+    background: linear-gradient(to bottom,
+        var(--flame-core-top) 0%,
+        var(--flame-core-mid) 15%,
+        var(--flame-core-end) 45%,
+        transparent 100%
+    );
+    border-radius: 0 0 50% 50%;
+    filter: blur(4px);
+    animation: burn 0.1s infinite alternate;
+    transition: height 0.4s ease-out;
+}
+
+.flameOuter {
+    position: absolute;
+    top: 0;
+    width: 52px;
+    height: 480px;
+    background: linear-gradient(to bottom,
+        var(--flame-outer-top) 0%,
+        var(--flame-outer-mid) 35%,
+        var(--flame-outer-end) 65%,
+        transparent 100%
+    );
+    border-radius: 0 0 50% 50%;
+    filter: blur(10px);
+    opacity: 0.6;
+    animation: burn 0.15s infinite alternate-reverse;
+    transition: height 0.4s ease-out;
+}
+
+.exhaustGlow {
+    position: absolute;
+    top: 155px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, var(--exhaust-glow), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(20px);
+    transition: opacity 0.4s;
+}
+
+@keyframes burn {
+    0% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(0.95); opacity: 0.9; }
+}
+
+/* Launch-intensified exhaust */
+.launching .flameCore {
+    height: 600px;
+    width: 24px;
+    filter: blur(6px);
+}
+
+.launching .flameOuter {
+    height: 750px;
+    width: 55px;
+    opacity: 0.9;
+}
+
+/* Exhaust trigger (hover area) */
+.exhaustTrigger {
+    position: absolute;
+    top: 150px;
+    width: 80px;
+    height: 300px;
+    z-index: 20;
+    background: transparent;
+    cursor: pointer;
+}
+
+.exhaustTrigger:hover ~ .exhaustVisuals .flameCore {
+    height: 500px;
+}
+
+.exhaustTrigger:hover ~ .exhaustVisuals .flameOuter {
+    height: 600px;
+}
+
+/* Click hint */
+.clickHint {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 160px;
+    z-index: 25;
+    cursor: pointer;
+    border-radius: 50% 50% 10% 10%;
+}
