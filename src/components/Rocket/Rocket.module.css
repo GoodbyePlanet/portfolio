@@ -45,6 +45,15 @@
     100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
+/* Tilt wrapper — separates mouse tilt from container animation */
+.rocketTilt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
+}
+
 /* Rocket body */
 .rocketBody {
     position: relative;
