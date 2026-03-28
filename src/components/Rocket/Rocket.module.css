@@ -209,3 +209,23 @@
     cursor: pointer;
     border-radius: 50% 50% 10% 10%;
 }
+
+/* ---- Responsive ---- */
+
+@media (max-width: 768px) {
+    .rocketContainer {
+        transform: scale(0.7);
+        top: 15%;
+    }
+
+    .idle {
+        animation: floatAndVibrate 4s ease-in-out infinite;
+    }
+}
+
+@media (max-width: 480px) {
+    .rocketContainer {
+        transform: scale(0.55);
+        top: 10%;
+    }
+}

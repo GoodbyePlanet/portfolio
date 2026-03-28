@@ -9,6 +9,7 @@ import { Earth } from './components/Earth/Earth';
 import { Rocket } from './components/Rocket/Rocket';
 import { HudPanel } from './components/HUD/HudPanel';
 import { HudRight } from './components/HUD/HudRight';
+import styles from './App.module.css';
 
 export default function App() {
   const { toggle } = useTheme();
@@ -17,8 +18,10 @@ export default function App() {
 
   return (
     <Scene shake={isShaking}>
-      <HudPanel />
-      <HudRight />
+      <div className={styles.hudMobileContainer}>
+        <HudPanel />
+        <HudRight />
+      </div>
       <Nebula />
       <StarField mouseRef={mouseRef} />
       <ShootingStars />

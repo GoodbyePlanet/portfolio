@@ -37,3 +37,37 @@
     transition: background 0.8s ease, box-shadow 0.8s ease;
     z-index: 1;
 }
+
+/* ---- Responsive ---- */
+
+@media (max-width: 768px) {
+    .earthWrapper {
+        top: 75%;
+    }
+
+    .earth {
+        width: 300vw;
+        height: 300vw;
+    }
+
+    .atmosphereGlow {
+        width: 302vw;
+        height: 302vw;
+    }
+}
+
+@media (max-width: 480px) {
+    .earthWrapper {
+        top: 70%;
+    }
+
+    .earth {
+        width: 350vw;
+        height: 350vw;
+    }
+
+    .atmosphereGlow {
+        width: 352vw;
+        height: 352vw;
+    }
+}
