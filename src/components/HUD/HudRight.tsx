@@ -5,29 +5,37 @@ import { fetchBlogPosts, blogAllHref, type BlogPost } from '../../data/blog';
 import { HudFrame } from './HudFrame';
 import styles from './HUD.module.css';
 
-export function HudRight() {
+interface HudRightProps {
+  projectsVisible?: boolean;
+  logsVisible?: boolean;
+}
+
+export function HudRight({ projectsVisible = true, logsVisible = true }: HudRightProps) {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const projectVisibility = useStaggeredReveal(projects.length, 1200, 200);
+  const projectVisibility = useStaggeredReveal(projects.length, 300, 200, projectsVisible);
 
   useEffect(() => {
     fetchBlogPosts().then(setBlogPosts);
   }, []);
 
-  const blogBaseDelay = 1200 + projects.length * 200 + 400;
-  const blogVisibility = useStaggeredReveal(blogPosts.length, blogBaseDelay, 200);
+  const blogVisibility = useStaggeredReveal(blogPosts.length, 300, 200, logsVisible);
 
   const [linkVisible, setLinkVisible] = useState(false);
 
   useEffect(() => {
-    if (blogPosts.length === 0) return;
-    const delay = blogBaseDelay + blogPosts.length * 200 + 300;
+    if (!logsVisible || blogPosts.length === 0) {
+      setLinkVisible(false);
+      return;
+    }
+    const delay = 300 + blogPosts.length * 200 + 300;
     const t = window.setTimeout(() => setLinkVisible(true), delay);
     return () => clearTimeout(t);
-  }, [blogBaseDelay, blogPosts.length]);
+  }, [logsVisible, blogPosts.length]);
 
   return (
     <div className={styles.hudRight}>
       {/* Projects Panel */}
+      <div className={`${styles.hudSubPanel} ${projectsVisible ? styles.hudSubPanelVisible : ''}`}>
       <HudFrame title="SIDE_PROJECTS">
         <ul className={styles.hudList}>
           {projects.map((p, i) => (
@@ -48,8 +56,10 @@ export function HudRight() {
           ))}
         </ul>
       </HudFrame>
+      </div>
 
       {/* Blog Panel */}
+      <div className={`${styles.hudSubPanel} ${logsVisible ? styles.hudSubPanelVisible : ''}`}>
       <HudFrame title="RECENT_LOGS">
         <ul className={styles.hudList}>
           {blogPosts.map((post, i) => (
@@ -77,6 +87,7 @@ export function HudRight() {
           View all Logs
         </span>
       </HudFrame>
+      </div>
     </div>
   );
 }

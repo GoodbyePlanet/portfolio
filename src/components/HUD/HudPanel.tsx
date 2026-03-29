@@ -11,18 +11,22 @@ const rows = [
   { label: 'Status', value: pilot.status },
 ];
 
-export function HudPanel() {
-  const rowVisibility = useStaggeredReveal(rows.length, 800, 200);
+export function HudPanel({ visible = true }: { visible?: boolean }) {
+  const rowVisibility = useStaggeredReveal(rows.length, 300, 200, visible);
   const [socialsVisible, setSocialsVisible] = useState(false);
 
   useEffect(() => {
-    const delay = 800 + rows.length * 200 + 300;
+    if (!visible) {
+      setSocialsVisible(false);
+      return;
+    }
+    const delay = 300 + rows.length * 200 + 300;
     const t = window.setTimeout(() => setSocialsVisible(true), delay);
     return () => clearTimeout(t);
-  }, []);
+  }, [visible]);
 
   return (
-    <div className={styles.hudPanel}>
+    <div className={`${styles.hudPanel} ${visible ? styles.hudPanelVisible : ''}`}>
       <HudFrame title="INFO">
         {rows.map((row, i) => (
           <div

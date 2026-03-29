@@ -2,6 +2,28 @@
     display: contents;
 }
 
+.tagline {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--hud-text-dim);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    animation: taglineFadeIn 1.5s ease-out 2s forwards;
+}
+
+@keyframes taglineFadeIn {
+    to {
+        opacity: 0.6;
+    }
+}
+
 @media (max-width: 768px) {
     .hudMobileContainer {
         display: flex;

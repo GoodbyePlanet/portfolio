@@ -7,6 +7,14 @@
     width: 320px;
     font-family: 'Share Tech Mono', 'Courier New', monospace;
     pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.hudPanelVisible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* Shared frame */
@@ -128,6 +136,27 @@
     margin-right: 3px;
 }
 
+/* Sub-panel visibility wrapper */
+.hudSubPanel {
+    display: none;
+}
+
+.hudSubPanelVisible {
+    display: block;
+    animation: subPanelReveal 0.6s ease forwards;
+}
+
+@keyframes subPanelReveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Right panels */
 .hudRight {
     position: absolute;
@@ -243,6 +272,13 @@
         left: auto;
         right: auto;
         width: 100%;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    .hudSubPanel {
+        opacity: 1 !important;
+        transform: none !important;
     }
 
     .hudPanel {
