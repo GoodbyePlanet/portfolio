@@ -21,6 +21,7 @@
     --atmosphere-glow-sm: rgba(255, 255, 255, 0.2);
     --window-bg: #111;
     --window-border: #666;
+    --window-glow: rgba(100, 180, 255, 0.4);
     --fin-center-color: var(--rocket-dark);
     --flame-core-top: #ffffff;
     --flame-core-mid: rgba(200, 200, 200, 0.8);
@@ -63,6 +64,7 @@
     --atmosphere-glow-sm: rgba(0, 0, 0, 0.35);
     --window-bg: #111;
     --window-border: #666;
+    --window-glow: rgba(100, 180, 255, 0.35);
     --fin-center-color: #151515;
     --flame-core-top: #333333;
     --flame-core-mid: rgba(40, 40, 40, 0.7);

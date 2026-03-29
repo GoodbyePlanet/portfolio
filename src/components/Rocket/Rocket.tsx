@@ -34,6 +34,8 @@ export function Rocket({ phase, mouseRef, onLaunch }: RocketProps) {
 
   return (
     <div className={className} ref={rocketRef} id="rocket">
+      <div className={styles.clickHint} onClick={onLaunch} />
+
       <div className={`${styles.fin} ${styles.finLeft}`} />
       <div className={`${styles.fin} ${styles.finRight}`} />
       <div className={styles.rocketBody}>
@@ -49,8 +51,6 @@ export function Rocket({ phase, mouseRef, onLaunch }: RocketProps) {
         <div className={styles.flameOuter} />
         <div className={styles.flameCore} />
       </div>
-
-      <div className={styles.clickHint} onClick={onLaunch} />
 
       <Sprinkles rocketRef={rocketRef} phase={phase} />
       <Smoke rocketRef={rocketRef} phase={phase} />

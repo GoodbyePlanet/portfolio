@@ -9,7 +9,7 @@ const FALL_MIN = 100;
 const FALL_RANGE = 300;
 const MIN_DURATION = 0.5;
 const DURATION_RANGE = 0.7;
-const HOVER_BATCH = 5;
+const HOVER_BATCH = 12;
 const LAUNCH_COUNT = 40;
 const LAUNCH_INTERVAL = 20;
 const RETURN_COUNT = 20;
@@ -76,11 +76,16 @@ export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
     if (!trigger) return;
 
     let isHovering = false;
+    let lastSpawnTime = 0;
+    const HOVER_THROTTLE = 80;
 
     const onEnter = () => { isHovering = true; };
     const onLeave = () => { isHovering = false; };
     const onMove = (e: MouseEvent) => {
       if (!isHovering) return;
+      const now = performance.now();
+      if (now - lastSpawnTime < HOVER_THROTTLE) return;
+      lastSpawnTime = now;
       for (let i = 0; i < HOVER_BATCH; i++) spawn(e.clientX, e.clientY);
     };
 

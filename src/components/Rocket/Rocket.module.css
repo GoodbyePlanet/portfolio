@@ -68,6 +68,12 @@
     background: var(--window-bg);
     border: 3px solid var(--window-border);
     border-radius: 50%;
+    box-shadow: 0 0 8px 2px var(--window-glow), inset 0 0 6px 1px var(--window-glow);
+    transition: box-shadow 0.3s ease;
+}
+
+.clickHint:hover ~ .rocketBody .window {
+    box-shadow: 0 0 18px 6px var(--window-glow), inset 0 0 12px 3px var(--window-glow);
 }
 
 .fin {
