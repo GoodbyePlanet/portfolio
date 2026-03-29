@@ -1,4 +1,4 @@
-const RSS_URL = 'https://goodbyeplanet-blog.vercel.app/index.xml';
+const RSS_URL = 'https://blog.goodbyeplanet.dev/index.xml';
 
 export interface BlogPost {
   title: string;
@@ -6,7 +6,7 @@ export interface BlogPost {
   link: string;
 }
 
-export const blogAllHref = 'https://goodbyeplanet-blog.vercel.app';
+export const blogAllHref = 'https://blog.goodbyeplanet.dev';
 
 export async function fetchBlogPosts(): Promise<BlogPost[]> {
   const res = await fetch(RSS_URL);
