@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react';
 import {
   type ConstellationId,
   type ConstellationState,
@@ -63,6 +64,31 @@ export function ConstellationNav({ states, onStarClick }: Props) {
           );
         })}
       </svg>
+
+      {/* Traveling sparks along freshly drawn lines */}
+      {CONSTELLATIONS.map((c) => {
+        const state = states[c.id];
+        const { stars } = c;
+        const sparks: { from: number; to: number; closing?: boolean }[] = [];
+        if (state.clickedCount >= 1) sparks.push({ from: 0, to: 1 });
+        if (state.clickedCount >= 2) sparks.push({ from: 1, to: 2 });
+        if (state.completed) sparks.push({ from: 2, to: 0, closing: true });
+
+        return sparks.map(({ from, to, closing }) => (
+          <span
+            key={`spark-${c.id}-${from}-${to}`}
+            className={`${styles.spark} ${closing ? styles.sparkClosing : ''}`}
+            style={
+              {
+                '--start-x': `${stars[from].x}%`,
+                '--start-y': `${stars[from].y}%`,
+                '--end-x': `${stars[to].x}%`,
+                '--end-y': `${stars[to].y}%`,
+              } as CSSProperties
+            }
+          />
+        ));
+      })}
 
       {/* Clickable stars */}
       {CONSTELLATIONS.map((c) => {

@@ -81,6 +81,94 @@
     transform: translate(-50%, -50%) scale(1.6);
 }
 
+/* Traveling spark along freshly drawn line */
+.spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--star-color);
+    box-shadow: 0 0 6px 2px rgba(180, 200, 255, 0.9);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 4;
+    animation: travelSpark 1s ease-out forwards;
+}
+
+.sparkClosing {
+    animation-delay: 0.15s;
+    animation-fill-mode: both;
+}
+
+:global([data-theme="light"]) .spark {
+    box-shadow: 0 0 6px 2px rgba(60, 60, 80, 0.7);
+}
+
+@keyframes travelSpark {
+    0% {
+        left: var(--start-x);
+        top: var(--start-y);
+        opacity: 0;
+    }
+    12% {
+        opacity: 1;
+    }
+    85% {
+        opacity: 1;
+    }
+    100% {
+        left: var(--end-x);
+        top: var(--end-y);
+        opacity: 0;
+    }
+}
+
+/* Orbiting particles around blinking dots */
+.hint::after,
+.next::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 2px;
+    margin: -1px 0 0 -1px;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow:
+        13px 3px 0.5px 0 rgba(190, 210, 255, 0.8),
+        -11px 6px 0.5px -0.5px rgba(190, 210, 255, 0.65),
+        4px -12px 0.5px 0.5px rgba(190, 210, 255, 0.75),
+        -7px -10px 0.5px -0.5px rgba(190, 210, 255, 0.6),
+        15px -3px 0.5px -0.5px rgba(190, 210, 255, 0.7),
+        -14px -2px 0.5px 0.5px rgba(190, 210, 255, 0.55),
+        9px 11px 0.5px -0.5px rgba(190, 210, 255, 0.65),
+        -9px 12px 0.5px 0 rgba(190, 210, 255, 0.6),
+        18px 6px 0.5px -0.5px rgba(190, 210, 255, 0.55),
+        -17px -7px 0.5px -0.5px rgba(190, 210, 255, 0.5),
+        2px 17px 0.5px -0.5px rgba(190, 210, 255, 0.65),
+        -2px -17px 0.5px 0 rgba(190, 210, 255, 0.7),
+        20px -5px 0.5px -0.5px rgba(190, 210, 255, 0.45),
+        -19px 4px 0.5px -0.5px rgba(190, 210, 255, 0.5),
+        11px -16px 0.5px -0.5px rgba(190, 210, 255, 0.55),
+        -12px 15px 0.5px -0.5px rgba(190, 210, 255, 0.5),
+        16px 14px 0.5px -0.5px rgba(190, 210, 255, 0.45),
+        -16px -14px 0.5px -0.5px rgba(190, 210, 255, 0.45),
+        6px -19px 0.5px -0.5px rgba(190, 210, 255, 0.55),
+        -5px 20px 0.5px -0.5px rgba(190, 210, 255, 0.5);
+    animation: particleOrbit 14s linear infinite;
+}
+
+.next::after {
+    animation-duration: 11s;
+    animation-direction: reverse;
+}
+
+@keyframes particleOrbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* First star of each constellation — invite interaction */
 .hint {
     opacity: 0.6;
@@ -170,6 +258,31 @@
 
 :global([data-theme="light"]) .completed {
     box-shadow: 0 0 4px 1px rgba(60, 60, 80, 0.3);
+}
+
+:global([data-theme="light"]) .hint::after,
+:global([data-theme="light"]) .next::after {
+    box-shadow:
+        13px 3px 0.5px 0 rgba(50, 50, 70, 0.7),
+        -11px 6px 0.5px -0.5px rgba(50, 50, 70, 0.55),
+        4px -12px 0.5px 0.5px rgba(50, 50, 70, 0.65),
+        -7px -10px 0.5px -0.5px rgba(50, 50, 70, 0.5),
+        15px -3px 0.5px -0.5px rgba(50, 50, 70, 0.6),
+        -14px -2px 0.5px 0.5px rgba(50, 50, 70, 0.45),
+        9px 11px 0.5px -0.5px rgba(50, 50, 70, 0.55),
+        -9px 12px 0.5px 0 rgba(50, 50, 70, 0.5),
+        18px 6px 0.5px -0.5px rgba(50, 50, 70, 0.45),
+        -17px -7px 0.5px -0.5px rgba(50, 50, 70, 0.4),
+        2px 17px 0.5px -0.5px rgba(50, 50, 70, 0.55),
+        -2px -17px 0.5px 0 rgba(50, 50, 70, 0.6),
+        20px -5px 0.5px -0.5px rgba(50, 50, 70, 0.35),
+        -19px 4px 0.5px -0.5px rgba(50, 50, 70, 0.4),
+        11px -16px 0.5px -0.5px rgba(50, 50, 70, 0.45),
+        -12px 15px 0.5px -0.5px rgba(50, 50, 70, 0.4),
+        16px 14px 0.5px -0.5px rgba(50, 50, 70, 0.35),
+        -16px -14px 0.5px -0.5px rgba(50, 50, 70, 0.35),
+        6px -19px 0.5px -0.5px rgba(50, 50, 70, 0.45),
+        -5px 20px 0.5px -0.5px rgba(50, 50, 70, 0.5);
 }
 
 @keyframes hintPulseLight {
