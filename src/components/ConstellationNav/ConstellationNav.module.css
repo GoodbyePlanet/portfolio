@@ -42,10 +42,11 @@
 }
 
 
-/* Completed constellation lines — stronger glow */
+/* Completed constellation lines — stronger glow (single shadow to keep the
+   13-line filter upgrade cheap at the moment the panels reveal) */
 .lineComplete {
     stroke-opacity: 0.7;
-    filter: drop-shadow(0 0 4px var(--star-color)) drop-shadow(0 0 8px var(--star-color));
+    filter: drop-shadow(0 0 5px var(--star-color));
 }
 
 /* Clickable navigation star */

@@ -20,7 +20,7 @@ export default function App() {
   const { toggle } = useTheme();
   const mouseRef = useParallax();
   const { phase, isShaking, launch } = useLaunchSequence(toggle);
-  const { states, handleStarClick } = useConstellationNav();
+  const { state, handleStarClick } = useConstellationNav();
 
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia('(max-width: 768px)').matches,
@@ -33,19 +33,39 @@ export default function App() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // Completing the rocket reveals all three panels in a staggered cascade.
+  const [reveal, setReveal] = useState({ info: false, projects: false, logs: false });
+
+  useEffect(() => {
+    if (isMobile) {
+      setReveal({ info: true, projects: true, logs: true });
+      return;
+    }
+    if (!state.completed) {
+      setReveal({ info: false, projects: false, logs: false });
+      return;
+    }
+    const timers = [
+      window.setTimeout(() => setReveal(r => ({ ...r, info: true })), 0),
+      window.setTimeout(() => setReveal(r => ({ ...r, projects: true })), 220),
+      window.setTimeout(() => setReveal(r => ({ ...r, logs: true })), 440),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [state.completed, isMobile]);
+
   return (
     <Scene shake={isShaking}>
       <div className={styles.hudMobileContainer}>
-        <HudPanel visible={isMobile || states.info.panelOpen} />
+        <HudPanel visible={reveal.info} />
         <HudRight
-          projectsVisible={isMobile || states.projects.panelOpen}
-          logsVisible={isMobile || states.logs.panelOpen}
+          projectsVisible={reveal.projects}
+          logsVisible={reveal.logs}
         />
       </div>
       <Nebula />
       <StarField mouseRef={mouseRef} />
       <Constellations mouseRef={mouseRef} />
-      <ConstellationNav states={states} onStarClick={handleStarClick} />
+      <ConstellationNav state={state} onStarClick={handleStarClick} />
       <ShootingStars />
       <CursorTrail mouseRef={mouseRef} />
       <Earth />

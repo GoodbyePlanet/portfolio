@@ -1,114 +1,106 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export type ConstellationId = 'info' | 'projects' | 'logs';
-
-export interface ConstellationState {
-  clickedCount: number;
-  completed: boolean;
-  panelOpen: boolean;
-}
-
 export interface NavStar {
   x: number;
   y: number;
 }
 
-export interface ConstellationDef {
-  id: ConstellationId;
-  stars: NavStar[];
-  label: string;
-}
-
-export const CONSTELLATIONS: ConstellationDef[] = [
-  {
-    id: 'info',
-    label: 'INFO',
-    stars: [
-      { x: 20, y: 16 },
-      { x: 33, y: 8 },
-      { x: 38, y: 22 },
-    ],
-  },
-  {
-    id: 'projects',
-    label: 'PROJECTS',
-    stars: [
-      { x: 58, y: 8 },
-      { x: 72, y: 14 },
-      { x: 66, y: 26 },
-    ],
-  },
-  {
-    id: 'logs',
-    label: 'LOGS',
-    stars: [
-      { x: 57, y: 44 },
-      { x: 72, y: 38 },
-      { x: 66, y: 54 },
-    ],
-  },
+/**
+ * A single large, detailed "rocket" constellation that frames the real rocket
+ * (which is centered at x≈50%, y≈25-45%). Coordinates are percentages on a
+ * 0-100 grid (see ConstellationNav viewBox). Vertices stay on the perimeter,
+ * clear of the rocket, so they remain clickable above it. The outline is
+ * symmetric about the vertical axis (x=50).
+ *
+ * Stars are grouped into segments by BEACONS below. Only the first star of
+ * each segment is a clickable "beacon"; clicking it draws that whole arc of the
+ * outline at once — so the detailed shape needs only a few clicks.
+ * Ordered clockwise: nose → right body/fin → engines → left fin/body → close.
+ */
+export const NAV_STARS: NavStar[] = [
+  { x: 50, y: 7 },   // 0  nose tip          ── beacon (segment 0)
+  { x: 58, y: 16 },  // 1  nose shoulder R
+  { x: 61, y: 27 },  // 2  body upper R
+  { x: 61, y: 43 },  // 3  body lower R      ── beacon (segment 1)
+  { x: 62, y: 51 },  // 4  fin shoulder R
+  { x: 73, y: 68 },  // 5  fin tip R
+  { x: 56, y: 64 },  // 6  engine R          ── beacon (segment 2)
+  { x: 44, y: 64 },  // 7  engine L
+  { x: 27, y: 68 },  // 8  fin tip L
+  { x: 38, y: 51 },  // 9  fin shoulder L    ── beacon (segment 3)
+  { x: 39, y: 43 },  // 10 body lower L
+  { x: 39, y: 27 },  // 11 body upper L
+  { x: 42, y: 16 },  // 12 nose shoulder L
 ];
 
-type States = Record<ConstellationId, ConstellationState>;
+/** Indices of the clickable beacon stars, in click order (one click per segment). */
+export const BEACONS = [0, 3, 6, 9];
+export const NUM_SEGMENTS = BEACONS.length;
 
-const defaultState: ConstellationState = {
-  clickedCount: 0,
-  completed: false,
-  panelOpen: false,
-};
+/** Where the completion label sits — above the nose, clear of the rocket. */
+export const NAV_LABEL_POS: NavStar = { x: 50, y: 3 };
+
+/** The segment an edge/star belongs to: the last beacon at or before its index. */
+export function segmentOf(index: number): number {
+  let seg = 0;
+  for (let k = 0; k < BEACONS.length; k++) if (BEACONS[k] <= index) seg = k;
+  return seg;
+}
+
+export interface NavEdge {
+  from: number;
+  to: number;
+  segment: number;
+  /** The closing edge back to the first star. */
+  closing: boolean;
+}
+
+/** Consecutive edges around the closed outline, one per star. */
+export const NAV_EDGES: NavEdge[] = NAV_STARS.map((_, i) => {
+  const to = (i + 1) % NAV_STARS.length;
+  return { from: i, to, segment: segmentOf(i), closing: to === 0 };
+});
+
+export interface NavState {
+  /** How many segments have been drawn (0..NUM_SEGMENTS). */
+  clickedSegments: number;
+  completed: boolean;
+}
 
 const STORAGE_KEY = 'constellation-nav';
 
-function loadStates(): States {
+function loadState(): NavState {
   try {
     const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Guard against stale data from a previous layout.
+      if (typeof parsed?.clickedSegments === 'number' && typeof parsed?.completed === 'boolean') {
+        return parsed;
+      }
+    }
   } catch { /* ignore */ }
-  return {
-    info: { ...defaultState },
-    projects: { ...defaultState },
-    logs: { ...defaultState },
-  };
+  return { clickedSegments: 0, completed: false };
 }
 
 export function useConstellationNav() {
-  const [states, setStates] = useState<States>(loadStates);
+  const [state, setState] = useState<NavState>(loadState);
 
   useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(states));
-  }, [states]);
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
 
-  const handleStarClick = useCallback((id: ConstellationId, starIndex: number) => {
-    setStates(prev => {
-      const state = prev[id];
+  const handleStarClick = useCallback((starIndex: number) => {
+    setState(prev => {
+      // Once the rocket is complete it stays complete.
+      if (prev.completed) return prev;
+      // Only the next segment's beacon advances the sequence.
+      if (starIndex !== BEACONS[prev.clickedSegments]) return prev;
 
-      // If completed and panel is open → reset (toggle off)
-      if (state.completed && state.panelOpen) {
-        return { ...prev, [id]: { ...defaultState } };
-      }
-
-      // If completed but panel closed → reopen
-      if (state.completed) {
-        return { ...prev, [id]: { ...state, panelOpen: true } };
-      }
-
-      // Must click stars in sequence
-      if (starIndex !== state.clickedCount) return prev;
-
-      const newCount = state.clickedCount + 1;
-      const totalStars = CONSTELLATIONS.find(c => c.id === id)!.stars.length;
-      const isComplete = newCount === totalStars;
-
-      return {
-        ...prev,
-        [id]: {
-          clickedCount: newCount,
-          completed: isComplete,
-          panelOpen: isComplete,
-        },
-      };
+      const next = prev.clickedSegments + 1;
+      return { clickedSegments: next, completed: next === NUM_SEGMENTS };
     });
   }, []);
 
-  return { states, handleStarClick };
+  return { state, handleStarClick };
 }

@@ -1,17 +1,22 @@
 import { type CSSProperties } from 'react';
 import {
-  type ConstellationId,
-  type ConstellationState,
-  CONSTELLATIONS,
+  type NavState,
+  NAV_STARS,
+  NAV_EDGES,
+  NAV_LABEL_POS,
+  BEACONS,
+  segmentOf,
 } from '../../hooks/useConstellationNav';
 import styles from './ConstellationNav.module.css';
 
 interface Props {
-  states: Record<ConstellationId, ConstellationState>;
-  onStarClick: (id: ConstellationId, starIndex: number) => void;
+  state: NavState;
+  onStarClick: (starIndex: number) => void;
 }
 
-export function ConstellationNav({ states, onStarClick }: Props) {
+export function ConstellationNav({ state, onStarClick }: Props) {
+  const { clickedSegments, completed } = state;
+
   return (
     <div className={styles.container}>
       {/* SVG lines between stars */}
@@ -20,124 +25,87 @@ export function ConstellationNav({ states, onStarClick }: Props) {
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
-        {CONSTELLATIONS.map((c) => {
-          const state = states[c.id];
-          const { stars } = c;
-          const complete = state.completed;
-
-          return (
-            <g key={c.id}>
-              {/* Line 0→1 */}
-              {state.clickedCount >= 1 && (
-                <line
-                  x1={stars[0].x}
-                  y1={stars[0].y}
-                  x2={stars[1].x}
-                  y2={stars[1].y}
-                  className={`${styles.line} ${complete ? styles.lineComplete : ''}`}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )}
-              {/* Line 1→2 */}
-              {state.clickedCount >= 2 && (
-                <line
-                  x1={stars[1].x}
-                  y1={stars[1].y}
-                  x2={stars[2].x}
-                  y2={stars[2].y}
-                  className={`${styles.line} ${complete ? styles.lineComplete : ''}`}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )}
-              {/* Closing line 2→0 */}
-              {complete && (
-                <line
-                  x1={stars[2].x}
-                  y1={stars[2].y}
-                  x2={stars[0].x}
-                  y2={stars[0].y}
-                  className={`${styles.line} ${styles.lineClosing} ${styles.lineComplete}`}
-                  vectorEffect="non-scaling-stroke"
-                />
-              )}
-            </g>
-          );
-        })}
+        {NAV_EDGES.map((edge) =>
+          edge.segment < clickedSegments ? (
+            <line
+              key={`line-${edge.from}-${edge.to}`}
+              x1={NAV_STARS[edge.from].x}
+              y1={NAV_STARS[edge.from].y}
+              x2={NAV_STARS[edge.to].x}
+              y2={NAV_STARS[edge.to].y}
+              className={[
+                styles.line,
+                edge.closing ? styles.lineClosing : '',
+                completed ? styles.lineComplete : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              vectorEffect="non-scaling-stroke"
+            />
+          ) : null,
+        )}
       </svg>
 
       {/* Traveling sparks along freshly drawn lines */}
-      {CONSTELLATIONS.map((c) => {
-        const state = states[c.id];
-        const { stars } = c;
-        const sparks: { from: number; to: number; closing?: boolean }[] = [];
-        if (state.clickedCount >= 1) sparks.push({ from: 0, to: 1 });
-        if (state.clickedCount >= 2) sparks.push({ from: 1, to: 2 });
-        if (state.completed) sparks.push({ from: 2, to: 0, closing: true });
-
-        return sparks.map(({ from, to, closing }) => (
+      {NAV_EDGES.map((edge) =>
+        edge.segment < clickedSegments ? (
           <span
-            key={`spark-${c.id}-${from}-${to}`}
-            className={`${styles.spark} ${closing ? styles.sparkClosing : ''}`}
+            key={`spark-${edge.from}-${edge.to}`}
+            className={`${styles.spark} ${edge.closing ? styles.sparkClosing : ''}`}
             style={
               {
-                '--start-x': `${stars[from].x}%`,
-                '--start-y': `${stars[from].y}%`,
-                '--end-x': `${stars[to].x}%`,
-                '--end-y': `${stars[to].y}%`,
+                '--start-x': `${NAV_STARS[edge.from].x}%`,
+                '--start-y': `${NAV_STARS[edge.from].y}%`,
+                '--end-x': `${NAV_STARS[edge.to].x}%`,
+                '--end-y': `${NAV_STARS[edge.to].y}%`,
               } as CSSProperties
             }
           />
-        ));
-      })}
+        ) : null,
+      )}
 
-      {/* Clickable stars */}
-      {CONSTELLATIONS.map((c) => {
-        const state = states[c.id];
+      {/* Stars: lit segment stars + the single next beacon */}
+      {NAV_STARS.map((star, i) => {
+        const segment = segmentOf(i);
+        const isBeacon = BEACONS.includes(i);
+        const isLit = segment < clickedSegments;
+        const isNext = isBeacon && segment === clickedSegments && !completed;
 
-        return c.stars.map((star, i) => {
-          const isClicked = i < state.clickedCount;
-          const isNext = i === state.clickedCount && !state.completed;
-          const isFirstHint = i === 0 && state.clickedCount === 0;
+        // Only render stars that have been drawn, or the next beacon to click.
+        if (!isLit && !isNext) return null;
 
-          const className = [
-            styles.navPoint,
-            isClicked ? styles.clicked : '',
-            isNext && !isFirstHint ? styles.next : '',
-            isFirstHint ? styles.hint : '',
-            state.completed ? styles.completed : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
+        const isFirstHint = isNext && clickedSegments === 0;
 
-          return (
-            <button
-              key={`${c.id}-${i}`}
-              className={className}
-              style={{ left: `${star.x}%`, top: `${star.y}%` }}
-              onClick={() => onStarClick(c.id, i)}
-              aria-label={`${c.label} constellation star ${i + 1}`}
-            />
-          );
-        });
-      })}
-
-      {/* Labels for completed constellations */}
-      {CONSTELLATIONS.map((c) => {
-        if (!states[c.id].completed) return null;
-
-        const cx = c.stars.reduce((s, p) => s + p.x, 0) / c.stars.length;
-        const cy = c.stars.reduce((s, p) => s + p.y, 0) / c.stars.length;
+        const className = [
+          styles.navPoint,
+          isLit ? styles.clicked : '',
+          isNext && !isFirstHint ? styles.next : '',
+          isFirstHint ? styles.hint : '',
+          completed ? styles.completed : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
 
         return (
-          <span
-            key={`label-${c.id}`}
-            className={styles.label}
-            style={{ left: `${cx}%`, top: `${cy}%` }}
-          >
-            {c.label}
-          </span>
+          <button
+            key={i}
+            className={className}
+            style={{ left: `${star.x}%`, top: `${star.y}%` }}
+            onClick={() => onStarClick(i)}
+            aria-label={`Rocket constellation beacon ${segment + 1}`}
+          />
         );
       })}
+
+      {/* Label appears once the rocket is complete */}
+      {completed && (
+        <span
+          className={styles.label}
+          style={{ left: `${NAV_LABEL_POS.x}%`, top: `${NAV_LABEL_POS.y}%` }}
+        >
+          IGNITION
+        </span>
+      )}
     </div>
   );
 }

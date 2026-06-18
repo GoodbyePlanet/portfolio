@@ -10,6 +10,7 @@
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.6s ease, transform 0.6s ease;
+    will-change: opacity, transform;
 }
 
 .hudPanelVisible {
@@ -23,19 +24,33 @@
     border: 1px solid var(--hud-border);
     border-radius: 6px;
     background: var(--hud-bg);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     padding: 20px 18px 16px;
     box-shadow:
-        0 0 15px var(--hud-glow),
-        inset 0 0 15px var(--hud-glow);
+        0 0 18px var(--hud-glow),
+        inset 0 0 16px var(--hud-glow);
     transition: border-color 0.8s ease, background 0.8s ease, box-shadow 0.8s ease;
-    animation: hudPulse 4s ease-in-out infinite;
 }
 
-@keyframes hudPulse {
-    0%, 100% { box-shadow: 0 0 15px var(--hud-glow), inset 0 0 15px var(--hud-glow); }
-    50% { box-shadow: 0 0 25px var(--hud-glow), inset 0 0 20px var(--hud-glow); }
+/* Breathing glow — animates opacity on a pseudo layer (compositor-only)
+   instead of animating box-shadow on the frame (which forces a full repaint
+   of the panel + its backdrop-filter every frame). */
+.hudFrame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Outer halo only — an inset glow here would paint over the text. */
+    box-shadow: 0 0 25px var(--hud-glow);
+    opacity: 0;
+    animation: hudGlowPulse 4s ease-in-out infinite;
+}
+
+@keyframes hudGlowPulse {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
 }
 
 /* Scanline overlay */
@@ -144,6 +159,7 @@
 .hudSubPanelVisible {
     display: block;
     animation: subPanelReveal 0.6s ease forwards;
+    will-change: opacity, transform;
 }
 
 @keyframes subPanelReveal {
