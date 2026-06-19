@@ -26,15 +26,17 @@ export function useLaunchSequence(onThemeToggle: () => void) {
     setIsShaking(true);
     schedule(() => setIsShaking(false), 600);
 
-    // Toggle theme while rocket is off-screen
+    // Toggle theme while the rocket is off-screen near its apex.
     schedule(() => onThemeToggle(), 1800);
-
-    // Transition to returning
-    schedule(() => setPhase('returning'), 2200);
-
-    // Back to idle
-    schedule(() => setPhase('idle'), 4700);
   }, [phase, onThemeToggle]);
 
-  return { phase, isShaking, launch };
+  // Advance launching -> returning -> idle as each phase's CSS animation
+  // finishes, so the JS never has to mirror the CSS durations.
+  const onPhaseEnd = useCallback(() => {
+    setPhase((p) =>
+      p === 'launching' ? 'returning' : p === 'returning' ? 'idle' : p,
+    );
+  }, []);
+
+  return { phase, isShaking, launch, onPhaseEnd };
 }

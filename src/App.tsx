@@ -19,7 +19,7 @@ import styles from './App.module.css';
 export default function App() {
   const { toggle } = useTheme();
   const mouseRef = useParallax();
-  const { phase, isShaking, launch } = useLaunchSequence(toggle);
+  const { phase, isShaking, launch, onPhaseEnd } = useLaunchSequence(toggle);
   const { state, handleStarClick } = useConstellationNav();
 
   const [isMobile, setIsMobile] = useState(
@@ -69,7 +69,7 @@ export default function App() {
       <ShootingStars />
       <CursorTrail mouseRef={mouseRef} />
       <Earth />
-      <Rocket phase={phase} mouseRef={mouseRef} onLaunch={launch} />
+      <Rocket phase={phase} onLaunch={launch} onPhaseEnd={onPhaseEnd} />
       <span className={styles.tagline}>The universe rewards the curious.</span>
     </Scene>
   );
