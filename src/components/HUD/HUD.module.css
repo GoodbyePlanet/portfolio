@@ -178,7 +178,7 @@
 
 .hudCertLink {
     pointer-events: auto;
-    color: var(--hud-text-dim);
+    color: var(--hud-text);
     text-decoration: none;
     font-family: 'Share Tech Mono', 'Courier New', monospace;
     font-size: 11px;
@@ -188,7 +188,7 @@
 }
 
 .hudCertLink:hover {
-    color: var(--hud-text);
+    color: var(--hud-accent);
 }
 
 .hudCertLink::before {
