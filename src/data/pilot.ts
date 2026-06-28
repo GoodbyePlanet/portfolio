@@ -10,3 +10,7 @@ export const socials = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/nemanja-vasic-linked' },
   { label: 'X', href: 'https://x.com/nemanjavasa' },
 ] as const;
+
+export const certifications = [
+  { name: 'Claude Certified Architect (CCA-F)', issuer: 'Anthropic', href: 'https://verify.skilljar.com/c/6ngr3c5mwoow' },
+] as const;

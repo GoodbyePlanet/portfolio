@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useStaggeredReveal } from '../../hooks/useStaggeredReveal';
-import { pilot, socials } from '../../data/pilot';
+import { pilot, socials, certifications } from '../../data/pilot';
 import { HudFrame } from './HudFrame';
 import styles from './HUD.module.css';
 
@@ -14,6 +14,7 @@ const rows = [
 export function HudPanel({ visible = true }: { visible?: boolean }) {
   const rowVisibility = useStaggeredReveal(rows.length, 300, 200, visible);
   const [socialsVisible, setSocialsVisible] = useState(false);
+  const [certsVisible, setCertsVisible] = useState(false);
 
   useEffect(() => {
     if (!visible) {
@@ -22,6 +23,16 @@ export function HudPanel({ visible = true }: { visible?: boolean }) {
     }
     const delay = 300 + rows.length * 200 + 300;
     const t = window.setTimeout(() => setSocialsVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setCertsVisible(false);
+      return;
+    }
+    const delay = 300 + rows.length * 200 + 300 + 200;
+    const t = window.setTimeout(() => setCertsVisible(true), delay);
     return () => clearTimeout(t);
   }, [visible]);
 
@@ -46,6 +57,20 @@ export function HudPanel({ visible = true }: { visible?: boolean }) {
               onClick={() => window.open(s.href, '_blank', 'noopener,noreferrer')}
             >
               {s.label}
+            </span>
+          ))}
+        </div>
+        <div className={`${styles.hudCerts}${certsVisible ? ` ${styles.hudCertsVisible}` : ''}`}>
+          <div className={styles.hudCertLabel}>CERTIFICATIONS</div>
+          {certifications.map((c) => (
+            <span
+              key={c.name}
+              role="link"
+              title={`Issued by ${c.issuer}`}
+              className={styles.hudCertLink}
+              onClick={() => window.open(c.href, '_blank', 'noopener,noreferrer')}
+            >
+              {c.name}
             </span>
           ))}
         </div>
