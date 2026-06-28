@@ -63,15 +63,17 @@ export function HudPanel({ visible = true }: { visible?: boolean }) {
         <div className={`${styles.hudCerts}${certsVisible ? ` ${styles.hudCertsVisible}` : ''}`}>
           <div className={styles.hudCertLabel}>CERTIFICATIONS</div>
           {certifications.map((c) => (
-            <span
-              key={c.name}
-              role="link"
-              title={`Issued by ${c.issuer}`}
-              className={styles.hudCertLink}
-              onClick={() => window.open(c.href, '_blank', 'noopener,noreferrer')}
-            >
-              {c.name}
-            </span>
+            <div key={c.name} className={styles.hudCert}>
+              <span
+                role="link"
+                title={`Issued by ${c.issuer}`}
+                className={styles.hudCertName}
+                onClick={() => window.open(c.href, '_blank', 'noopener,noreferrer')}
+              >
+                {c.name}
+              </span>
+              <div className={styles.hudCertIssuer}>by {c.issuer}</div>
+            </div>
           ))}
         </div>
       </HudFrame>

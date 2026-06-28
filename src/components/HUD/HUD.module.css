@@ -176,24 +176,33 @@
     opacity: 0.7;
 }
 
-.hudCertLink {
+.hudCert {
+    margin-bottom: 4px;
+}
+
+.hudCert:last-child {
+    margin-bottom: 0;
+}
+
+.hudCertName {
     pointer-events: auto;
     color: var(--hud-text);
     text-decoration: none;
-    font-family: 'Share Tech Mono', 'Courier New', monospace;
-    font-size: 11px;
-    letter-spacing: 1px;
-    transition: color 0.3s ease;
+    font-size: 13px;
+    line-height: 1.6;
     cursor: pointer;
+    transition: color 0.3s ease;
 }
 
-.hudCertLink:hover {
+.hudCertName:hover {
     color: var(--hud-accent);
 }
 
-.hudCertLink::before {
-    content: '>';
-    margin-right: 3px;
+.hudCertIssuer {
+    color: var(--hud-text-dim);
+    font-size: 10px;
+    letter-spacing: 1px;
+    transition: color 0.8s ease;
 }
 
 /* Sub-panel visibility wrapper */
