@@ -1,4 +1,5 @@
 export const projects = [
+  { name: 'semcode — Semantic code search MCP', tech: 'Python / MCP / Qdrant', link: 'https://github.com/GoodbyePlanet/semcode' },
   { name: 'EU AI Act Compliance Agent', tech: 'Python / Agent Development Kit (ADK)', link: 'https://eu-ai-audit.com' },
   { name: 'Learning Graphs', tech: 'Typescript', link: 'https://pathforge.goodbyeplanet.dev' },
   { name: 'Markdown editor with VIM keybindings and URL-based state management', tech: 'Typescript', link: 'https://vimark.goodbyeplanet.dev' },
