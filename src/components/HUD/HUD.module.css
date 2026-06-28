@@ -151,6 +151,51 @@
     margin-right: 3px;
 }
 
+/* Certifications */
+.hudCerts {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--hud-border);
+    opacity: 0;
+    transition: opacity 0.4s ease, border-color 0.8s ease;
+}
+
+.hudCertsVisible {
+    opacity: 1;
+}
+
+.hudCertLabel {
+    color: var(--hud-text-dim);
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.hudCertLink {
+    pointer-events: auto;
+    color: var(--hud-text-dim);
+    text-decoration: none;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+.hudCertLink:hover {
+    color: var(--hud-text);
+}
+
+.hudCertLink::before {
+    content: '>';
+    margin-right: 3px;
+}
+
 /* Sub-panel visibility wrapper */
 .hudSubPanel {
     display: none;
