@@ -9,7 +9,10 @@ export interface BlogPost {
 export const blogAllHref = 'https://blog.goodbyeplanet.dev';
 
 export async function fetchBlogPosts(): Promise<BlogPost[]> {
-  const res = await fetch(RSS_URL);
+  // Bypass browser/CDN caching so newly published posts always show up.
+  // The feed has no Cache-Control header, so browsers apply heuristic caching;
+  // 'no-store' plus a cache-busting query param defeats both layers.
+  const res = await fetch(`${RSS_URL}?_=${Date.now()}`, { cache: 'no-store' });
   const text = await res.text();
   const xml = new DOMParser().parseFromString(text, 'text/xml');
   const items = xml.querySelectorAll('item');
