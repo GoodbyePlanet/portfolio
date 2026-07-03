@@ -44,7 +44,7 @@
     transition: box-shadow 0.8s ease;
 }
 
-/* Inner edge — thin, bright */
+/* Inner edge — thin, bright; gently graded toward the day side like the rim arc */
 .atmosphereInner {
     position: absolute;
     top: -3px;
@@ -60,9 +60,14 @@
     pointer-events: none;
     z-index: 4;
     transition: box-shadow 0.8s ease;
+    -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 31%, rgba(0, 0, 0, 0.7) 45%, #000 60%);
+    mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.35) 31%, rgba(0, 0, 0, 0.7) 45%, #000 60%);
 }
 
-/* Thin, crisp rim-glow arc hugging the horizon curve — the "orbital photo" cue */
+/* Thin, crisp rim-glow arc hugging the horizon curve — the "orbital photo" cue.
+   Masked so it's brightest toward the day side (right, where the terminator
+   gradient puts the sun) and dissolves into the night side.
+   The viewport spans 30%–70% of this 250vw element. */
 .rimArc {
     position: absolute;
     top: -1px;
@@ -78,6 +83,8 @@
     pointer-events: none;
     z-index: 4;
     transition: box-shadow 0.8s ease;
+    -webkit-mask-image: linear-gradient(90deg, transparent 31%, rgba(0, 0, 0, 0.35) 45%, #000 60%);
+    mask-image: linear-gradient(90deg, transparent 31%, rgba(0, 0, 0, 0.35) 45%, #000 60%);
 }
 
 [data-theme="light"] .rimArc {
@@ -86,27 +93,44 @@
         0 -1px 5px 0 rgba(60, 100, 180, 0.3);
 }
 
-/* Lonely satellite — a slower, dimmer cousin of the shooting stars */
+/* Lonely satellite — a slower, dimmer cousin of the shooting stars.
+   The orbit ring matches the planet disc and rotates about its center,
+   so the dot pinned to its top edge skims the horizon at constant height. */
+.satelliteOrbit {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 250vw;
+    height: 250vw;
+    margin-left: -125vw; /* rotation animation owns transform, so center via margin */
+    pointer-events: none;
+    z-index: 6;
+    animation: satelliteOrbit 60s linear infinite;
+}
+
 .satellite {
     position: absolute;
-    top: -10px;
-    left: -5%;
+    top: -6px;
+    left: 50%;
     width: 3px;
     height: 3px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.6);
-    z-index: 6;
-    pointer-events: none;
-    animation: satelliteDrift 50s linear infinite, satelliteBlink 1.4s steps(1, end) infinite;
+    animation: satelliteBlink 1.4s steps(1, end) infinite;
+    transition: background 0.8s ease, box-shadow 0.8s ease;
 }
 
-@keyframes satelliteDrift {
-    0% { left: -5%; visibility: hidden; }
-    2% { visibility: visible; }
-    48% { visibility: visible; }
-    50% { left: 105%; visibility: hidden; }
-    100% { left: 105%; visibility: hidden; }
+[data-theme="light"] .satellite {
+    background: rgba(25, 28, 38, 0.9);
+    box-shadow: 0 0 3px 1px rgba(25, 28, 38, 0.5);
+}
+
+/* Sweep across the visible arc (~±24° is on-screen), then hold off-screen */
+@keyframes satelliteOrbit {
+    0% { transform: rotate(-28deg); }
+    45% { transform: rotate(28deg); }
+    100% { transform: rotate(28deg); }
 }
 
 @keyframes satelliteBlink {
@@ -115,12 +139,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .satellite {
+    .satelliteOrbit {
         display: none;
-    }
-
-    .cityLights {
-        animation: none;
     }
 }
 
@@ -175,34 +195,6 @@
     );
 }
 
-/* Sparse city-light pinpricks, confined to the visible rim on the night
-   side (same side the terminator darkens first). */
-.cityLights {
-    position: absolute;
-    top: 0;
-    left: 4%;
-    width: 1px;
-    height: 1px;
-    pointer-events: none;
-    z-index: 6;
-    box-shadow:
-        0 2px 0 1px rgba(255, 210, 140, 0.7),
-        14px 4px 0 0.5px rgba(255, 210, 140, 0.45),
-        27px 1px 0 1px rgba(255, 210, 140, 0.6),
-        41px 5px 0 0.5px rgba(255, 210, 140, 0.35),
-        55px 2px 0 1px rgba(255, 210, 140, 0.55),
-        68px 6px 0 0.5px rgba(255, 210, 140, 0.4);
-    animation: cityTwinkle 5s ease-in-out infinite;
-}
-
-@keyframes cityTwinkle {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-}
-
-[data-theme="light"] .cityLights {
-    display: none;
-}
 
 [data-theme="light"] .atmosphereOuter {
     box-shadow:
@@ -241,6 +233,12 @@
         width: 300.5vw;
         height: 300.5vw;
     }
+
+    .satelliteOrbit {
+        width: 300vw;
+        height: 300vw;
+        margin-left: -150vw;
+    }
 }
 
 @media (max-width: 480px) {
@@ -271,5 +269,11 @@
     .rimArc {
         width: 350.5vw;
         height: 350.5vw;
+    }
+
+    .satelliteOrbit {
+        width: 350vw;
+        height: 350vw;
+        margin-left: -175vw;
     }
 }

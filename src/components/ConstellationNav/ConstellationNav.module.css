@@ -52,8 +52,8 @@
 /* Clickable navigation star */
 .navPoint {
     position: absolute;
-    width: calc(8px * var(--nav-size-scale, 1));
-    height: calc(8px * var(--nav-size-scale, 1));
+    width: 8px;
+    height: 8px;
     border: none;
     padding: 0;
     border-radius: 50%;

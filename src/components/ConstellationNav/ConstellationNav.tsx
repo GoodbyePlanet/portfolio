@@ -86,9 +86,8 @@ export function ConstellationNav({ state, onStarClick }: Props) {
           .filter(Boolean)
           .join(' ');
 
-        // Deterministic per-star variance so lit vertices don't all pulse
-        // in lockstep — slight size and independent twinkle phase.
-        const sizeScale = 0.85 + ((i * 37) % 5) / 10;
+        // Deterministic per-star phase offset so lit vertices don't all
+        // pulse in lockstep.
         const twinkleDelay = ((i * 0.53) % 3).toFixed(2);
 
         return (
@@ -99,7 +98,6 @@ export function ConstellationNav({ state, onStarClick }: Props) {
               {
                 left: `${star.x}%`,
                 top: `${star.y}%`,
-                '--nav-size-scale': sizeScale,
                 '--twinkle-delay': `${twinkleDelay}s`,
               } as CSSProperties
             }
