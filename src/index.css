@@ -23,9 +23,9 @@
     --window-border: #666;
     --window-glow: rgba(100, 180, 255, 0.4);
     --fin-center-color: var(--rocket-dark);
-    --flame-core-top: #ffffff;
-    --flame-core-mid: rgba(200, 200, 200, 0.8);
-    --flame-core-end: rgba(150, 150, 150, 0.4);
+    --flame-core-top: #fff4e0;
+    --flame-core-mid: rgba(255, 179, 71, 0.85);
+    --flame-core-end: rgba(217, 127, 30, 0.35);
     --flame-outer-top: rgba(200, 200, 200, 0.7);
     --flame-outer-mid: rgba(100, 100, 100, 0.3);
     --flame-outer-end: rgba(50, 50, 50, 0.1);
@@ -42,6 +42,11 @@
     --hud-label: rgba(180, 180, 180, 0.4);
     --hud-scanline: rgba(255, 255, 255, 0.02);
     --hud-cursor: rgba(230, 230, 230, 0.8);
+
+    /* Accent — engine-flame amber, used stingily */
+    --accent-amber: #ffb347;
+    --accent-amber-rgb: 255, 179, 71;
+    --hud-accent: var(--accent-amber);
 }
 
 [data-theme="light"] {
@@ -66,9 +71,9 @@
     --window-border: #666;
     --window-glow: rgba(100, 180, 255, 0.35);
     --fin-center-color: #151515;
-    --flame-core-top: #333333;
-    --flame-core-mid: rgba(40, 40, 40, 0.7);
-    --flame-core-end: rgba(20, 20, 20, 0.4);
+    --flame-core-top: #c9660a;
+    --flame-core-mid: rgba(217, 127, 30, 0.75);
+    --flame-core-end: rgba(120, 70, 20, 0.4);
     --flame-outer-top: rgba(50, 50, 50, 0.6);
     --flame-outer-mid: rgba(20, 20, 20, 0.3);
     --flame-outer-end: rgba(0, 0, 0, 0.1);
@@ -85,6 +90,11 @@
     --hud-label: rgba(30, 35, 45, 0.35);
     --hud-scanline: rgba(30, 35, 45, 0.03);
     --hud-cursor: rgba(30, 35, 45, 0.8);
+
+    /* Accent — engine-flame amber, used stingily */
+    --accent-amber: #d97f1e;
+    --accent-amber-rgb: 217, 127, 30;
+    --hud-accent: var(--accent-amber);
 }
 
 body, html {

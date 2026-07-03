@@ -86,11 +86,23 @@ export function ConstellationNav({ state, onStarClick }: Props) {
           .filter(Boolean)
           .join(' ');
 
+        // Deterministic per-star variance so lit vertices don't all pulse
+        // in lockstep — slight size and independent twinkle phase.
+        const sizeScale = 0.85 + ((i * 37) % 5) / 10;
+        const twinkleDelay = ((i * 0.53) % 3).toFixed(2);
+
         return (
           <button
             key={i}
             className={className}
-            style={{ left: `${star.x}%`, top: `${star.y}%` }}
+            style={
+              {
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                '--nav-size-scale': sizeScale,
+                '--twinkle-delay': `${twinkleDelay}s`,
+              } as CSSProperties
+            }
             onClick={() => onStarClick(i)}
             aria-label={`Rocket constellation beacon ${segment + 1}`}
           />

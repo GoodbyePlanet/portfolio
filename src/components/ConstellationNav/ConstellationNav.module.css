@@ -52,8 +52,8 @@
 /* Clickable navigation star */
 .navPoint {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: calc(8px * var(--nav-size-scale, 1));
+    height: calc(8px * var(--nav-size-scale, 1));
     border: none;
     padding: 0;
     border-radius: 50%;
@@ -64,6 +64,7 @@
     pointer-events: auto;
     transition: opacity 0.3s, box-shadow 0.3s, transform 0.3s;
     z-index: 3;
+    animation-delay: var(--twinkle-delay, 0s);
 }
 
 /* Larger click target */
@@ -173,18 +174,19 @@
 /* First star of each constellation — invite interaction */
 .hint {
     opacity: 0.6;
+    background: var(--accent-amber);
     animation: hintPulse 2.5s ease-in-out infinite;
 }
 
 @keyframes hintPulse {
     0%, 100% {
         opacity: 0.4;
-        box-shadow: 0 0 4px 1px rgba(180, 200, 255, 0.25);
+        box-shadow: 0 0 4px 1px rgba(var(--accent-amber-rgb), 0.3);
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
         opacity: 0.9;
-        box-shadow: 0 0 10px 3px rgba(180, 200, 255, 0.55);
+        box-shadow: 0 0 12px 4px rgba(var(--accent-amber-rgb), 0.65);
         transform: translate(-50%, -50%) scale(1.3);
     }
 }
@@ -192,35 +194,45 @@
 /* Next star in sequence — subtle beacon */
 .next {
     opacity: 0.55;
+    background: var(--accent-amber);
     animation: nextPulse 1.8s ease-in-out infinite;
 }
 
 @keyframes nextPulse {
     0%, 100% {
         opacity: 0.35;
-        box-shadow: 0 0 3px 1px rgba(180, 200, 255, 0.15);
+        box-shadow: 0 0 3px 1px rgba(var(--accent-amber-rgb), 0.2);
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
         opacity: 0.85;
-        box-shadow: 0 0 8px 2px rgba(180, 200, 255, 0.45);
+        box-shadow: 0 0 10px 3px rgba(var(--accent-amber-rgb), 0.55);
         transform: translate(-50%, -50%) scale(1.2);
     }
 }
 
-/* Already clicked star — solid glow */
+/* Already clicked star — solid glow with a slow independent twinkle */
 .clicked {
     opacity: 1;
-    box-shadow: 0 0 6px 2px rgba(180, 200, 255, 0.55);
-    animation: none;
+    background: var(--accent-amber);
+    box-shadow: 0 0 6px 2px rgba(var(--accent-amber-rgb), 0.55);
+    animation: navTwinkle 4s ease-in-out infinite;
+    animation-delay: var(--twinkle-delay, 0s);
 }
 
 /* Stars in a completed constellation */
 .completed {
     opacity: 0.75;
-    box-shadow: 0 0 4px 1px rgba(180, 200, 255, 0.35);
-    animation: none;
+    background: var(--accent-amber);
+    box-shadow: 0 0 4px 1px rgba(var(--accent-amber-rgb), 0.35);
+    animation: navTwinkle 5s ease-in-out infinite;
+    animation-delay: var(--twinkle-delay, 0s);
     cursor: pointer;
+}
+
+@keyframes navTwinkle {
+    0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
 }
 
 /* Constellation label (appears after completion) */
@@ -244,23 +256,8 @@
     }
 }
 
-/* Light theme adjustments */
-:global([data-theme="light"]) .hint {
-    animation-name: hintPulseLight;
-}
-
-:global([data-theme="light"]) .next {
-    animation-name: nextPulseLight;
-}
-
-:global([data-theme="light"]) .clicked {
-    box-shadow: 0 0 6px 2px rgba(60, 60, 80, 0.45);
-}
-
-:global([data-theme="light"]) .completed {
-    box-shadow: 0 0 4px 1px rgba(60, 60, 80, 0.3);
-}
-
+/* Light theme adjustments — beacon amber stays constant across themes;
+   only the decorative orbit-particle halo swaps to a darker dot color. */
 :global([data-theme="light"]) .hint::after,
 :global([data-theme="light"]) .next::after {
     box-shadow:
@@ -286,31 +283,6 @@
         -5px 20px 0.5px -0.5px rgba(50, 50, 70, 0.5);
 }
 
-@keyframes hintPulseLight {
-    0%, 100% {
-        opacity: 0.4;
-        box-shadow: 0 0 4px 1px rgba(60, 60, 80, 0.2);
-        transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-        opacity: 0.9;
-        box-shadow: 0 0 10px 3px rgba(60, 60, 80, 0.45);
-        transform: translate(-50%, -50%) scale(1.3);
-    }
-}
-
-@keyframes nextPulseLight {
-    0%, 100% {
-        opacity: 0.35;
-        box-shadow: 0 0 3px 1px rgba(60, 60, 80, 0.15);
-        transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-        opacity: 0.85;
-        box-shadow: 0 0 8px 2px rgba(60, 60, 80, 0.4);
-        transform: translate(-50%, -50%) scale(1.2);
-    }
-}
 
 /* Hide on mobile — panels show directly */
 @media (max-width: 768px) {
