@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useStaggeredReveal } from '../../hooks/useStaggeredReveal';
+import { useMissionElapsedTime } from '../../hooks/useMissionElapsedTime';
 import { pilot, socials, certifications } from '../../data/pilot';
 import { HudFrame } from './HudFrame';
 import styles from './HUD.module.css';
@@ -15,6 +16,7 @@ export function HudPanel({ visible = true }: { visible?: boolean }) {
   const rowVisibility = useStaggeredReveal(rows.length, 300, 200, visible);
   const [socialsVisible, setSocialsVisible] = useState(false);
   const [certsVisible, setCertsVisible] = useState(false);
+  const met = useMissionElapsedTime();
 
   useEffect(() => {
     if (!visible) {
@@ -38,14 +40,17 @@ export function HudPanel({ visible = true }: { visible?: boolean }) {
 
   return (
     <div className={`${styles.hudPanel} ${visible ? styles.hudPanelVisible : ''}`}>
-      <HudFrame title="INFO">
+      <HudFrame title="INFO" corner={met}>
         {rows.map((row, i) => (
           <div
             key={i}
             className={`${styles.hudRow}${rowVisibility[i] ? ` ${styles.hudRowVisible}` : ''}`}
           >
             <div className={styles.hudLabel}>{row.label}</div>
-            <div className={styles.hudValue}>{row.value}</div>
+            <div className={styles.hudValue}>
+              {row.value}
+              {row.label === 'Status' && <span className={styles.statusDot} />}
+            </div>
           </div>
         ))}
         <div className={`${styles.hudSocials}${socialsVisible ? ` ${styles.hudSocialsVisible}` : ''}`}>

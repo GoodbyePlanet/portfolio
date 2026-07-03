@@ -11,6 +11,7 @@ export function Scene({ shake, children }: SceneProps) {
   return (
     <div className={className} id="scene">
       {children}
+      <div className={styles.grain} />
     </div>
   );
 }

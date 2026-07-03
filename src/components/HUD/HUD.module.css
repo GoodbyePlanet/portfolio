@@ -18,11 +18,11 @@
     transform: translateY(0);
 }
 
-/* Shared frame */
+/* Shared frame — corner brackets instead of a full box, drawn with
+   background gradients on ::before so no extra DOM nodes are needed. */
 .hudFrame {
     position: relative;
-    border: 1px solid var(--hud-border);
-    border-radius: 6px;
+    border-radius: 2px;
     background: var(--hud-bg);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -30,7 +30,24 @@
     box-shadow:
         0 0 18px var(--hud-glow),
         inset 0 0 16px var(--hud-glow);
-    transition: border-color 0.8s ease, background 0.8s ease, box-shadow 0.8s ease;
+    transition: background 0.8s ease, box-shadow 0.8s ease;
+}
+
+.hudFrame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(var(--hud-border), var(--hud-border)) top left / 16px 1px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) top left / 1px 16px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) top right / 16px 1px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) top right / 1px 16px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) bottom left / 16px 1px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) bottom left / 1px 16px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) bottom right / 16px 1px no-repeat,
+        linear-gradient(var(--hud-border), var(--hud-border)) bottom right / 1px 16px no-repeat;
+    transition: background 0.8s ease;
 }
 
 /* Breathing glow — animates opacity on a pseudo layer (compositor-only)
@@ -73,6 +90,8 @@
 
 /* Header */
 .hudHeader {
+    display: flex;
+    align-items: baseline;
     font-size: 11px;
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -83,9 +102,22 @@
     transition: color 0.8s ease, border-color 0.8s ease;
 }
 
+/* MET-style ticker in the corner of a panel header */
+.hudCorner {
+    margin-left: auto;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--hud-text-dim);
+    text-transform: none;
+}
+
 .hudHeader span {
     color: var(--hud-text);
     transition: color 0.8s ease;
+}
+
+.hudHeader .hudPrompt {
+    color: var(--hud-accent);
 }
 
 /* Content rows */
@@ -102,6 +134,18 @@
 .hudRowVisible {
     opacity: 1;
     transform: translateX(0);
+    animation: bootFlicker 0.4s steps(1, end);
+}
+
+/* One-time CRT-style boot flicker, layered onto the staggered reveal */
+@keyframes bootFlicker {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    30% { opacity: 0.2; }
+    45% { opacity: 1; }
+    55% { opacity: 0.3; }
+    70% { opacity: 1; }
+    100% { opacity: 1; }
 }
 
 .hudLabel {
@@ -114,6 +158,24 @@
 
 .hudValue {
     display: inline;
+}
+
+/* Pulsing dot next to STATUS: Developing */
+.statusDot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 8px;
+    border-radius: 50%;
+    background: var(--hud-accent);
+    box-shadow: 0 0 5px 1px rgba(var(--accent-amber-rgb), 0.7);
+    animation: statusPulse 1.8s ease-in-out infinite;
+    vertical-align: middle;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
 }
 
 /* Social links */
@@ -149,6 +211,7 @@
 .hudSocialLink::before {
     content: '>';
     margin-right: 3px;
+    color: var(--hud-accent);
 }
 
 /* Certifications */
@@ -312,6 +375,7 @@
 
 .hudLink::before {
     content: '> ';
+    color: var(--hud-accent);
 }
 
 /* ---- Responsive ---- */
@@ -396,5 +460,13 @@
 
     .hudSocialLink {
         font-size: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hudFrame::after,
+    .hudRowVisible,
+    .statusDot {
+        animation: none;
     }
 }

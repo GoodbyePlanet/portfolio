@@ -62,6 +62,68 @@
     transition: box-shadow 0.8s ease;
 }
 
+/* Thin, crisp rim-glow arc hugging the horizon curve — the "orbital photo" cue */
+.rimArc {
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250vw;
+    height: 250vw;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow:
+        0 -1px 2px 0 rgba(140, 190, 255, 0.9),
+        0 -1px 5px 0 rgba(140, 190, 255, 0.5);
+    pointer-events: none;
+    z-index: 4;
+    transition: box-shadow 0.8s ease;
+}
+
+[data-theme="light"] .rimArc {
+    box-shadow:
+        0 -1px 2px 0 rgba(60, 100, 180, 0.6),
+        0 -1px 5px 0 rgba(60, 100, 180, 0.3);
+}
+
+/* Lonely satellite — a slower, dimmer cousin of the shooting stars */
+.satellite {
+    position: absolute;
+    top: -10px;
+    left: -5%;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.6);
+    z-index: 6;
+    pointer-events: none;
+    animation: satelliteDrift 50s linear infinite, satelliteBlink 1.4s steps(1, end) infinite;
+}
+
+@keyframes satelliteDrift {
+    0% { left: -5%; visibility: hidden; }
+    2% { visibility: visible; }
+    48% { visibility: visible; }
+    50% { left: 105%; visibility: hidden; }
+    100% { left: 105%; visibility: hidden; }
+}
+
+@keyframes satelliteBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .satellite {
+        display: none;
+    }
+
+    .cityLights {
+        animation: none;
+    }
+}
+
 /* ========== Planet surface ========== */
 
 .earth {
@@ -113,6 +175,35 @@
     );
 }
 
+/* Sparse city-light pinpricks, confined to the visible rim on the night
+   side (same side the terminator darkens first). */
+.cityLights {
+    position: absolute;
+    top: 0;
+    left: 4%;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    z-index: 6;
+    box-shadow:
+        0 2px 0 1px rgba(255, 210, 140, 0.7),
+        14px 4px 0 0.5px rgba(255, 210, 140, 0.45),
+        27px 1px 0 1px rgba(255, 210, 140, 0.6),
+        41px 5px 0 0.5px rgba(255, 210, 140, 0.35),
+        55px 2px 0 1px rgba(255, 210, 140, 0.55),
+        68px 6px 0 0.5px rgba(255, 210, 140, 0.4);
+    animation: cityTwinkle 5s ease-in-out infinite;
+}
+
+@keyframes cityTwinkle {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+[data-theme="light"] .cityLights {
+    display: none;
+}
+
 [data-theme="light"] .atmosphereOuter {
     box-shadow:
         0 -6px 60px rgba(0, 0, 0, 0.08),
@@ -145,6 +236,11 @@
         width: 300.5vw;
         height: 300.5vw;
     }
+
+    .rimArc {
+        width: 300.5vw;
+        height: 300.5vw;
+    }
 }
 
 @media (max-width: 480px) {
@@ -168,6 +264,11 @@
     }
 
     .atmosphereInner {
+        width: 350.5vw;
+        height: 350.5vw;
+    }
+
+    .rimArc {
         width: 350.5vw;
         height: 350.5vw;
     }

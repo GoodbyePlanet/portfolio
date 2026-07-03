@@ -16,7 +16,11 @@ export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
   const phaseClass = styles[phase] || '';
 
   return (
-    <div className={styles.rocketScale} ref={rocketRef} id="rocket">
+    <div
+      className={`${styles.rocketScale}${phase === 'idle' ? ` ${styles.rocketDrift}` : ''}`}
+      ref={rocketRef}
+      id="rocket"
+    >
       <div
         className={`${styles.rocketFloat} ${phaseClass}`}
         onAnimationEnd={(e) => {
@@ -32,6 +36,7 @@ export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
         <div className={styles.rocketBody}>
           <div className={styles.window} />
           <div className={styles.finCenter} />
+          <span className={styles.rcsPuff} />
         </div>
 
         <div className={styles.exhaustGlow} />

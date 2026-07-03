@@ -3,15 +3,17 @@ import styles from './HUD.module.css';
 
 interface HudFrameProps {
   title: string;
+  corner?: ReactNode;
   children: ReactNode;
 }
 
-export function HudFrame({ title, children }: HudFrameProps) {
+export function HudFrame({ title, corner, children }: HudFrameProps) {
   return (
     <div className={styles.hudFrame}>
       <div className={styles.hudScanlines} />
       <div className={styles.hudHeader}>
-        &gt; <span>{title}</span>
+        <span className={styles.hudPrompt}>&gt;</span> <span>{title}</span>
+        {corner && <span className={styles.hudCorner}>{corner}</span>}
       </div>
       {children}
     </div>
