@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import type { MousePos } from '../../hooks/useParallax';
 import { Sprinkles } from '../Particles/Sprinkles';
@@ -15,6 +15,7 @@ interface RocketProps {
 
 export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
   const rocketRef = useRef<HTMLDivElement>(null);
+  const [boost, setBoost] = useState(false);
 
   const phaseClass = styles[phase] || '';
 
@@ -28,27 +29,24 @@ export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
         className={`${styles.rocketFloat} ${phaseClass}`}
         onAnimationEnd={(e) => {
           // Only this layer's own finite launch/return animations reach here;
-          // the idle float and flame burn animations loop forever.
+          // the idle float animation loops forever.
           if (e.target === e.currentTarget) onPhaseEnd();
         }}
       >
         <div className={styles.clickHint} onClick={onLaunch} />
 
-        {/* The hull, fins, porthole and engine bell are all rendered by
-            three.js inside this box; the glow and flame below stay CSS so
-            they keep reading as soft light against the scene. */}
+        {/* Hull and plume are both drawn by three.js inside this box, which
+            keeps the exact footprint the CSS rocket had so the click target
+            and the particle bursts still line up. */}
         <div className={styles.rocketBody}>
-          <Rocket3D phase={phase} mouseRef={mouseRef} />
+          <Rocket3D phase={phase} boost={boost} mouseRef={mouseRef} />
         </div>
 
-        <div className={styles.exhaustGlow} />
-
-        <div className={styles.exhaustTrigger} />
-
-        <div className={styles.exhaustVisuals}>
-          <div className={styles.flameOuter} />
-          <div className={styles.flameCore} />
-        </div>
+        <div
+          className={styles.exhaustTrigger}
+          onMouseEnter={() => setBoost(true)}
+          onMouseLeave={() => setBoost(false)}
+        />
       </div>
 
       <Sprinkles rocketRef={rocketRef} phase={phase} />

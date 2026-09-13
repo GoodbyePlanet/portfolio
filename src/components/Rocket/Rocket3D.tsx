@@ -3,22 +3,26 @@ import * as THREE from 'three';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import type { MousePos } from '../../hooks/useParallax';
 import { buildRocket, NOSE_TIP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
+import { createExhaust, type ExhaustColors } from './exhaust';
 import styles from './Rocket.module.css';
 
 /**
- * The CSS rocket occupied a 70x180px box and every exhaust layer is positioned
- * against it, so the 3D nose tip is pinned to the top of that box and the
- * nozzle exit to its bottom. The canvas is larger and centred on the box, which
- * lets fins, antenna and engine bloom spill outside without moving anything.
+ * The rocket occupies the same 70x180px box the CSS version did — nose tip at
+ * the top of it, nozzle exit at the bottom — so the click target and the
+ * particle bursts that measure that box still line up. The canvas is far
+ * taller, hanging well below, because the shader plume lives in it too.
  */
 const BOX_H = 180;
-const CANVAS_W = 340;
-const CANVAS_H = 460;
+const CANVAS_W = 400;
+const CANVAS_H = 900;
+const CANVAS_TOP = -140; // px above the top of the box
 const PX_PER_UNIT = BOX_H / (NOSE_TIP - NOZZLE_EXIT);
-const FOV = 24;
+const FOV = 30;
 
 interface Rocket3DProps {
   phase: LaunchPhase;
+  /** Hovering the exhaust stretches the plume, as the CSS flame used to. */
+  boost?: boolean;
   mouseRef?: RefObject<MousePos>;
 }
 
@@ -30,7 +34,17 @@ function readPalette(): RocketPalette {
     body: v('--rocket-body', '#e6e6e6'),
     dark: v('--rocket-dark', '#151515'),
     windowGlow: v('--window-glow', 'rgba(100, 180, 255, 0.4)'),
-    accent: v('--accent-amber', '#ffb347'),
+  };
+}
+
+function readFlame(): ExhaustColors {
+  const s = getComputedStyle(document.documentElement);
+  const v = (name: string, fallback: string) =>
+    s.getPropertyValue(name).trim() || fallback;
+  return {
+    core: v('--flame-core-top', '#fff4e0'),
+    mid: v('--flame-core-mid', 'rgba(255, 179, 71, 0.85)'),
+    tail: v('--flame-core-end', 'rgba(217, 127, 30, 0.35)'),
   };
 }
 
@@ -91,7 +105,7 @@ function buildEnvScene(): { scene: THREE.Scene; dispose: () => void } {
   };
 }
 
-export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
+export function Rocket3D({ phase, boost = false, mouseRef }: Rocket3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   // The render loop reads the phase without being torn down and rebuilt, so it
   // lives in a ref that a separate effect keeps in sync.
@@ -100,6 +114,12 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  const boostRef = useRef(boost);
+
+  useEffect(() => {
+    boostRef.current = boost;
+  }, [boost]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -122,12 +142,14 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
 
     const scene = new THREE.Scene();
 
-    // Narrow FOV keeps the silhouette close to the original flat rocket while
-    // still giving the hull a little honest perspective.
-    const camera = new THREE.PerspectiveCamera(FOV, CANVAS_W / CANVAS_H, 1, 100);
+    // A modest FOV: enough perspective for the hull to read as a solid, not
+    // so much that the long plume skews away from vertical.
+    const camera = new THREE.PerspectiveCamera(FOV, CANVAS_W / CANVAS_H, 1, 200);
     const worldH = CANVAS_H / PX_PER_UNIT;
-    camera.position.z = worldH / 2 / Math.tan(THREE.MathUtils.degToRad(FOV / 2));
-    camera.lookAt(0, 0, 0);
+    // The canvas hangs below the rocket, so frame its centre, not the origin.
+    const centreY = NOSE_TIP - CANVAS_TOP / PX_PER_UNIT - worldH / 2;
+    camera.position.set(0, centreY, worldH / 2 / Math.tan(THREE.MathUtils.degToRad(FOV / 2)));
+    camera.lookAt(0, centreY, 0);
 
     const env = buildEnvScene();
     const pmrem = new THREE.PMREMGenerator(renderer);
@@ -147,10 +169,20 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
     const fill = new THREE.HemisphereLight(0xbcd2ff, 0x2a2f3a, 0.55);
     scene.add(fill);
 
+    const palette = readPalette();
+    const rocket = buildRocket(palette);
+    scene.add(rocket.root);
+
+    const exhaust = createExhaust(NOZZLE_EXIT, readFlame());
+    rocket.root.add(exhaust.mesh);
+
     // The light theme puts the rocket on a pale sky, so lift the ambient and
     // the exposure to stop the hull reading as a dark cut-out.
     const applyThemeLighting = () => {
       const light = document.documentElement.getAttribute('data-theme') === 'light';
+      // Additive light on a pale sky just washes out, so the plume paints
+      // over it instead of adding to it in the light theme.
+      exhaust.setAdditive(!light);
       fill.intensity = light ? 1.5 : 0.55;
       fill.groundColor.set(light ? 0xc8ccd4 : 0x2a2f3a);
       rim.intensity = light ? 1.8 : 3.2;
@@ -158,15 +190,12 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
     };
     applyThemeLighting();
 
-    const palette = readPalette();
-    const rocket = buildRocket(palette);
-    scene.add(rocket.root);
-
     /* --- motion state ---------------------------------------------- */
 
     let yaw = THREE.MathUtils.degToRad(-28); // start in a readable three-quarter
     let yawSpeed = 0.16;
     let thrust = 0.12;
+    let boostAmt = 0;
     const tilt = { x: 0, y: 0 };
     let raf = 0;
     const clock = new THREE.Clock();
@@ -203,8 +232,12 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
       rocket.root.rotation.x = tilt.x;
       rocket.root.rotation.z = sway + (p === 'launching' ? Math.sin(t * 26) * 0.006 : 0);
 
+      const wantBoost = p === 'idle' && boostRef.current ? 1 : 0;
+      boostAmt += (wantBoost - boostAmt) * Math.min(1, dt * 5);
+
       rocket.setThrust(thrust);
       rocket.update(t);
+      exhaust.update(t, thrust, boostAmt);
       renderer.render(scene, camera);
     };
 
@@ -212,6 +245,7 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
       rocket.hull.rotation.y = yaw;
       rocket.setThrust(0.12);
       rocket.update(0);
+      exhaust.update(0, 0.12, 0);
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(frame);
@@ -221,6 +255,7 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
 
     const observer = new MutationObserver(() => {
       rocket.setPalette(readPalette());
+      exhaust.setColors(readFlame());
       applyThemeLighting();
       if (reduced) renderer.render(scene, camera);
     });
@@ -233,6 +268,7 @@ export function Rocket3D({ phase, mouseRef }: Rocket3DProps) {
       cancelAnimationFrame(raf);
       observer.disconnect();
       scene.remove(rocket.root);
+      exhaust.dispose();
       rocket.dispose();
       envRT.dispose();
       renderer.dispose();
