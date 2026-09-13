@@ -1,16 +1,19 @@
-import { useRef } from 'react';
+import { useRef, type RefObject } from 'react';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
+import type { MousePos } from '../../hooks/useParallax';
 import { Sprinkles } from '../Particles/Sprinkles';
 import { Smoke } from '../Particles/Smoke';
+import { Rocket3D } from './Rocket3D';
 import styles from './Rocket.module.css';
 
 interface RocketProps {
   phase: LaunchPhase;
   onLaunch: () => void;
   onPhaseEnd: () => void;
+  mouseRef?: RefObject<MousePos>;
 }
 
-export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
+export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
   const rocketRef = useRef<HTMLDivElement>(null);
 
   const phaseClass = styles[phase] || '';
@@ -31,12 +34,11 @@ export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
       >
         <div className={styles.clickHint} onClick={onLaunch} />
 
-        <div className={`${styles.fin} ${styles.finLeft}`} />
-        <div className={`${styles.fin} ${styles.finRight}`} />
+        {/* The hull, fins, porthole and engine bell are all rendered by
+            three.js inside this box; the glow and flame below stay CSS so
+            they keep reading as soft light against the scene. */}
         <div className={styles.rocketBody}>
-          <div className={styles.window} />
-          <div className={styles.finCenter} />
-          <span className={styles.rcsPuff} />
+          <Rocket3D phase={phase} mouseRef={mouseRef} />
         </div>
 
         <div className={styles.exhaustGlow} />
