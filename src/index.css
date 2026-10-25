@@ -11,6 +11,7 @@
     --rocket-body: #e6e6e6;
     --rocket-shadow: #999999;
     --rocket-dark: #151515;
+    --rocket-accent: var(--accent-amber);
     --star-color: white;
     --star-opacity: 0.1;
     --star-peak-opacity: 0.8;
@@ -59,6 +60,7 @@
     --rocket-body: #e6e6e6;
     --rocket-shadow: #999999;
     --rocket-dark: #151515;
+    --rocket-accent: var(--accent-amber);
     --star-color: #555;
     --star-opacity: 0.08;
     --star-peak-opacity: 0.4;

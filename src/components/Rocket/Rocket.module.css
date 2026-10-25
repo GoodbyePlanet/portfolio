@@ -69,12 +69,6 @@
     width: 70px;
     height: 180px;
     z-index: 5;
-    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-/* Hovering the launch target gives the hull a small, confident swell. */
-.clickHint:hover ~ .rocketBody {
-    transform: scale(1.035);
 }
 
 /* Zero-size anchor at the top centre of the box; the canvas hangs off it,
@@ -97,26 +91,29 @@
     pointer-events: none;
 }
 
-/* Exhaust hover + particle anchor. The plume itself is drawn by the shader
-   in the three.js canvas; this is only an invisible hit area. */
+/* Exhaust hover + particle anchor. The plume itself is drawn in the three.js
+   canvas; this is only an invisible hit area sized to the idle flame: from
+   the nozzle exit (180px) to roughly where it fades out, and narrow enough
+   to stay clear of the fin tips either side. */
 .exhaustTrigger {
     position: absolute;
-    top: 150px;
-    width: 80px;
-    height: 300px;
+    top: 174px;
+    width: 44px;
+    height: 80px;
     z-index: 20;
     background: transparent;
     cursor: pointer;
 }
 
-/* Click hint */
+/* Click hint — starts above the box to cover the nose, which pokes ~23px
+   above it since the hull was stretched. */
 .clickHint {
     position: absolute;
-    top: 0;
+    top: -23px;
     left: 50%;
     transform: translateX(-50%);
     width: 80px;
-    height: 160px;
+    height: 183px;
     z-index: 25;
     cursor: pointer;
     border-radius: 50% 50% 10% 10%;
@@ -147,9 +144,5 @@
 
     .rocketDrift {
         animation: none;
-    }
-
-    .clickHint:hover ~ .rocketBody {
-        transform: none;
     }
 }

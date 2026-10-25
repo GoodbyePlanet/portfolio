@@ -16,6 +16,7 @@ interface RocketProps {
 export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
   const rocketRef = useRef<HTMLDivElement>(null);
   const [boost, setBoost] = useState(false);
+  const [spin, setSpin] = useState(false);
 
   const phaseClass = styles[phase] || '';
 
@@ -33,13 +34,18 @@ export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
           if (e.target === e.currentTarget) onPhaseEnd();
         }}
       >
-        <div className={styles.clickHint} onClick={onLaunch} />
+        <div
+          className={styles.clickHint}
+          onClick={onLaunch}
+          onMouseEnter={() => setSpin(true)}
+          onMouseLeave={() => setSpin(false)}
+        />
 
         {/* Hull and plume are both drawn by three.js inside this box, which
             keeps the exact footprint the CSS rocket had so the click target
             and the particle bursts still line up. */}
         <div className={styles.rocketBody}>
-          <Rocket3D phase={phase} boost={boost} mouseRef={mouseRef} />
+          <Rocket3D phase={phase} boost={boost} spin={spin} mouseRef={mouseRef} />
         </div>
 
         <div

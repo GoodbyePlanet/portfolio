@@ -2,27 +2,30 @@ import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import type { MousePos } from '../../hooks/useParallax';
-import { buildRocket, NOSE_TIP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
+import { buildRocket, BOX_TOP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
 import { createExhaust, type ExhaustColors } from './exhaust';
 import styles from './Rocket.module.css';
 
 /**
- * The rocket occupies the same 70x180px box the CSS version did — nose tip at
- * the top of it, nozzle exit at the bottom — so the click target and the
- * particle bursts that measure that box still line up. The canvas is far
+ * The rocket occupies the same 70x180px box the CSS version did — BOX_TOP at
+ * the top of it (the stretched nose pokes above), nozzle exit at the bottom —
+ * so the click target and the particle bursts that measure that box still
+ * line up. The canvas is far
  * taller, hanging well below, because the shader plume lives in it too.
  */
 const BOX_H = 180;
 const CANVAS_W = 400;
 const CANVAS_H = 900;
 const CANVAS_TOP = -140; // px above the top of the box
-const PX_PER_UNIT = BOX_H / (NOSE_TIP - NOZZLE_EXIT);
+const PX_PER_UNIT = BOX_H / (BOX_TOP - NOZZLE_EXIT);
 const FOV = 30;
 
 interface Rocket3DProps {
   phase: LaunchPhase;
   /** Hovering the exhaust stretches the plume, as the CSS flame used to. */
   boost?: boolean;
+  /** Hovering the hull spins it up while idle. */
+  spin?: boolean;
   mouseRef?: RefObject<MousePos>;
 }
 
@@ -33,6 +36,7 @@ function readPalette(): RocketPalette {
   return {
     body: v('--rocket-body', '#e6e6e6'),
     dark: v('--rocket-dark', '#151515'),
+    accent: v('--rocket-accent', '#e2463a'),
     windowGlow: v('--window-glow', 'rgba(100, 180, 255, 0.4)'),
   };
 }
@@ -105,7 +109,7 @@ function buildEnvScene(): { scene: THREE.Scene; dispose: () => void } {
   };
 }
 
-export function Rocket3D({ phase, boost = false, mouseRef }: Rocket3DProps) {
+export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocket3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   // The render loop reads the phase without being torn down and rebuilt, so it
   // lives in a ref that a separate effect keeps in sync.
@@ -120,6 +124,12 @@ export function Rocket3D({ phase, boost = false, mouseRef }: Rocket3DProps) {
   useEffect(() => {
     boostRef.current = boost;
   }, [boost]);
+
+  const spinRef = useRef(spin);
+
+  useEffect(() => {
+    spinRef.current = spin;
+  }, [spin]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -147,7 +157,7 @@ export function Rocket3D({ phase, boost = false, mouseRef }: Rocket3DProps) {
     const camera = new THREE.PerspectiveCamera(FOV, CANVAS_W / CANVAS_H, 1, 200);
     const worldH = CANVAS_H / PX_PER_UNIT;
     // The canvas hangs below the rocket, so frame its centre, not the origin.
-    const centreY = NOSE_TIP - CANVAS_TOP / PX_PER_UNIT - worldH / 2;
+    const centreY = BOX_TOP - CANVAS_TOP / PX_PER_UNIT - worldH / 2;
     camera.position.set(0, centreY, worldH / 2 / Math.tan(THREE.MathUtils.degToRad(FOV / 2)));
     camera.lookAt(0, centreY, 0);
 
@@ -174,7 +184,7 @@ export function Rocket3D({ phase, boost = false, mouseRef }: Rocket3DProps) {
     scene.add(rocket.root);
 
     const exhaust = createExhaust(NOZZLE_EXIT, readFlame());
-    rocket.root.add(exhaust.mesh);
+    rocket.root.add(exhaust.root);
 
     // The light theme puts the rocket on a pale sky, so lift the ambient and
     // the exposure to stop the hull reading as a dark cut-out.
@@ -208,9 +218,11 @@ export function Rocket3D({ phase, boost = false, mouseRef }: Rocket3DProps) {
       const t = clock.elapsedTime;
       const p = phaseRef.current;
 
-      // Idle drifts lazily; launch spins the hull up and lights the engine;
-      // the return glides back down to the resting cadence.
-      const targetYawSpeed = p === 'launching' ? 3.4 : p === 'returning' ? 1.1 : 0.16;
+      // Idle drifts lazily, or spins up while hovered; launch spins the hull
+      // up and lights the engine; the return glides back down to the resting
+      // cadence.
+      const idleYawSpeed = spinRef.current ? 1.6 : 0.16;
+      const targetYawSpeed = p === 'launching' ? 3.4 : p === 'returning' ? 1.1 : idleYawSpeed;
       const targetThrust = p === 'launching' ? 1 : p === 'returning' ? 0.45 : 0.12;
       const ease = p === 'launching' ? 6 : 2.2;
       yawSpeed += (targetYawSpeed - yawSpeed) * Math.min(1, dt * ease);

@@ -1,16 +1,19 @@
 /**
- * Shader-driven engine plume.
+ * Low-poly engine plume.
  *
- * One additive quad hanging under the nozzle. The fragment shader builds the
- * flame from scrolling fbm noise: a narrow white core, an amber body that
- * widens and frays as it falls away, mach diamonds just under the throat, and
- * a cool tail that dissolves into nothing. Thrust drives length, width and
- * brightness, so the same material covers the idle burn and the launch.
+ * Two nested, faceted teardrops hanging from the nozzle: an amber outer flame
+ * and a short white-hot core. The vertex shader wobbles each vertex on its own
+ * phase so the facets shimmer and the tip licks side to side; the fragment
+ * shader lights every facet flat, matching the hull. Thrust drives length,
+ * width and brightness, so the same meshes cover the idle burn and the launch.
  */
 import * as THREE from 'three';
 
-const PLUME_W = 4.2;
-const PLUME_H = 16;
+/** Radial facets — one fewer than the hull, so the flame never looks like an
+ *  extension of the bell. */
+const SIDES = 7;
+const FLAME_R = 0.34;
+const CORE_R = 0.18;
 
 export interface ExhaustColors {
   core: string;
@@ -19,7 +22,7 @@ export interface ExhaustColors {
 }
 
 export interface Exhaust {
-  mesh: THREE.Mesh;
+  root: THREE.Group;
   setColors(c: ExhaustColors): void;
   /** Additive over a dark sky; normal over a pale one, where adding light
    *  would only wash the plume out. */
@@ -30,165 +33,156 @@ export interface Exhaust {
 }
 
 const vertexShader = /* glsl */ `
-  varying vec2 vUv;
+  uniform float uTime;
+  uniform float uWobble;
+
+  varying float vAlong;
+  varying vec3 vViewPos;
+
+  float hash(vec3 p) {
+    // Quantised so the lathe's duplicated seam vertices hash identically and
+    // the mesh never tears open.
+    p = floor(p * 1000.0 + 0.5);
+    return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+  }
+
   void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec3 p = position;
+    float along = -p.y;              // 0 at the nozzle, 1 at the tip
+    float h = hash(position);
+
+    // The nozzle ring stays put; everything below breathes on its own phase.
+    float wob = sin(uTime * (9.0 + 7.0 * h) + h * 6.2832);
+    p.xz *= 1.0 + uWobble * 0.16 * wob * along;
+    p.y *= 1.0 + uWobble * 0.07 * wob * along;
+    // The tip licks side to side.
+    p.x += uWobble * 0.1 * along * along * sin(uTime * 6.3);
+    p.z += uWobble * 0.06 * along * along * sin(uTime * 4.7 + 1.3);
+
+    vAlong = along;
+    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+    vViewPos = mv.xyz;
+    gl_Position = projectionMatrix * mv;
   }
 `;
 
 const fragmentShader = /* glsl */ `
-  precision highp float;
-
-  uniform float uTime;
-  uniform float uThrust;
-  uniform float uBoost;
+  uniform vec3 uTop;
+  uniform vec3 uBottom;
   uniform float uOpacity;
-  uniform vec3 uCore;
-  uniform vec3 uMid;
-  uniform vec3 uTail;
 
-  varying vec2 vUv;
-
-  float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-  }
-
-  // Value noise - smooth enough for flame, far cheaper than gradient noise.
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(
-      mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-      mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-      u.y
-    );
-  }
-
-  float fbm(vec2 p) {
-    float v = 0.0;
-    float a = 0.5;
-    for (int i = 0; i < 4; i++) {
-      v += a * noise(p);
-      p *= 2.03;
-      a *= 0.5;
-    }
-    return v;
-  }
+  varying float vAlong;
+  varying vec3 vViewPos;
 
   void main() {
-    float t = vUv.y;                 // 0 at the nozzle, 1 at the far tail
-    float x = vUv.x - 0.5;
+    // Face normal from screen-space derivatives: every triangle gets one
+    // flat shade, whatever the wobble has done to it.
+    vec3 n = normalize(cross(dFdx(vViewPos), dFdy(vViewPos)));
+    float facet = 0.62 + 0.38 * max(dot(n, normalize(vec3(-0.5, 0.35, 0.8))), 0.0);
 
-    // How far the plume reaches before it dissolves.
-    float len = mix(0.3, 0.72, uThrust) + 0.1 * uBoost;
-    float nt = t / max(len, 0.001);  // 0..1 along the visible plume
-
-    // Exhaust accelerates as it leaves the throat, so the noise scrolls faster
-    // further down and the column shears instead of sliding rigidly. Close to
-    // the throat the flow is still laminar, so the turbulence ramps in.
-    float flow = uTime * (1.6 + 2.4 * uThrust);
-    float turb = fbm(vec2(x * 6.0, t * 4.0 - flow)) - 0.5;
-    turb *= smoothstep(0.02, 0.4, nt) * (0.06 + 0.3 * nt);
-
-    // The column leaves the bell at roughly the nozzle's own width, then opens.
-    float w = (0.175 + 0.28 * pow(nt, 0.85)) * (0.9 + 0.25 * uThrust);
-
-    float d = abs(x + turb);
-    float body = smoothstep(w, w * 0.5, d);
-
-    // Fine-grain noise so the edge frays into the dark instead of ending on a
-    // clean cone.
-    float fray = fbm(vec2(x * 15.0, t * 9.0 - flow * 1.7));
-    body *= 0.72 + 0.56 * fray;
-    float core = smoothstep(w * 0.45, 0.0, d) * (1.0 - smoothstep(0.05, 0.6, nt));
-
-    // Tail-off, plus a hard cut at the nozzle so the flame starts flat.
-    float fade = 1.0 - smoothstep(0.35, 1.0, nt);
-    fade *= smoothstep(0.0, 0.015, t);
-
-    // Combustion never burns steady.
-    float flicker = 0.86 + 0.14 * fbm(vec2(uTime * 3.0, t * 2.0 - flow * 0.5));
-
-    // Mach diamonds: standing shocks in the first stretch under the throat.
-    float diamonds =
-      pow(max(sin(nt * 62.0 - 1.2), 0.0), 14.0) *
-      exp(-nt * 11.0) *
-      smoothstep(w * 0.35, 0.0, d) *
-      uThrust * 0.55;
-
-    // Hot at the throat, cooling as it falls away.
-    vec3 col = mix(uMid, uCore, pow(core, 1.3));
-    col = mix(col, uTail, smoothstep(0.15, 0.95, nt));
-    col += uCore * diamonds;
-
-    float alpha = body * fade * flicker * (0.5 + 0.5 * uThrust);
-    alpha += core * fade * 0.35;
-
-    alpha *= uOpacity;
-
-    if (alpha < 0.003) discard;
+    vec3 col = mix(uTop, uBottom, smoothstep(0.1, 0.9, vAlong)) * facet;
+    float alpha = uOpacity * (1.0 - smoothstep(0.55, 1.0, vAlong));
     gl_FragColor = vec4(col, alpha);
   }
 `;
 
-export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
-  const geometry = new THREE.PlaneGeometry(PLUME_W, PLUME_H, 1, 1);
-  // UV v runs 0 at the nozzle downwards, which is how the shader reads it.
-  const uv = geometry.attributes.uv as THREE.BufferAttribute;
-  for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
-  uv.needsUpdate = true;
+/** Teardrop that swells just under the nozzle, then tapers to a point. */
+function flameGeometry(radius: number): THREE.LatheGeometry {
+  const pts: THREE.Vector2[] = [];
+  const STEPS = 5;
+  for (let i = 0; i <= STEPS; i++) {
+    const t = i / STEPS;
+    const r = radius * (1 + 0.3 * Math.sin(t * Math.PI * 0.8)) * Math.pow(1 - t, 0.75);
+    pts.push(new THREE.Vector2(Math.max(r, 0.0001), -t));
+  }
+  return new THREE.LatheGeometry(pts, SIDES);
+}
 
-  const uniforms = {
-    uTime: { value: 0 },
-    uThrust: { value: 0 },
-    uBoost: { value: 0 },
-    uOpacity: { value: 1 },
-    uCore: { value: new THREE.Color(colors.core) },
-    uMid: { value: new THREE.Color(colors.mid) },
-    uTail: { value: new THREE.Color(colors.tail) },
+export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
+  const root = new THREE.Group();
+  // Start a touch inside the bell so the flame reads as coming out of it.
+  root.position.y = nozzleY + 0.06;
+
+  const layer = (radius: number, top: THREE.Color, bottom: THREE.Color, order: number) => {
+    const uniforms = {
+      uTime: { value: 0 },
+      uWobble: { value: 1 },
+      uOpacity: { value: 1 },
+      uTop: { value: top },
+      uBottom: { value: bottom },
+    };
+    const geometry = flameGeometry(radius);
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.renderOrder = order;
+    root.add(mesh);
+    return { mesh, uniforms, geometry, material };
   };
 
-  const material = new THREE.ShaderMaterial({
-    uniforms,
-    vertexShader,
-    fragmentShader,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
-    toneMapped: false,
-  });
+  const outer = layer(
+    FLAME_R,
+    new THREE.Color(colors.mid),
+    new THREE.Color(colors.tail),
+    2,
+  );
+  const core = layer(
+    CORE_R,
+    new THREE.Color(colors.core),
+    new THREE.Color(colors.mid),
+    3,
+  );
+  const layers = [outer, core];
 
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.y = nozzleY + 0.04 - PLUME_H / 2;
-  mesh.renderOrder = 2;
+  // Painted rather than added, the plume would sit on the pale sky as a flat
+  // opaque slab, so it is thinned out a little there.
+  let paintedOpacity = 1;
 
   return {
-    mesh,
+    root,
     setAdditive: (additive) => {
       const next = additive ? THREE.AdditiveBlending : THREE.NormalBlending;
-      if (material.blending === next) return;
-      material.blending = next;
-      // Painted rather than added, the plume would otherwise sit on the pale
-      // sky as a flat opaque slab.
-      uniforms.uOpacity.value = additive ? 1 : 0.62;
-      material.needsUpdate = true;
+      paintedOpacity = additive ? 1 : 0.8;
+      for (const l of layers) {
+        if (l.material.blending === next) continue;
+        l.material.blending = next;
+        l.material.needsUpdate = true;
+      }
     },
     setColors: (c) => {
-      uniforms.uCore.value.set(c.core);
-      uniforms.uMid.value.set(c.mid);
-      uniforms.uTail.value.set(c.tail);
+      outer.uniforms.uTop.value.set(c.mid);
+      outer.uniforms.uBottom.value.set(c.tail);
+      core.uniforms.uTop.value.set(c.core);
+      core.uniforms.uBottom.value.set(c.mid);
     },
     update: (time, thrust, boost) => {
-      uniforms.uTime.value = time;
-      uniforms.uThrust.value = thrust;
-      uniforms.uBoost.value = boost;
+      const len = THREE.MathUtils.lerp(2.0, 5.5, thrust) + 1.1 * boost;
+      const width = THREE.MathUtils.lerp(0.85, 1.15, thrust);
+      // Combustion never burns steady.
+      const flicker = 0.94 + 0.06 * Math.sin(time * 23.0) * Math.sin(time * 7.1);
+
+      outer.mesh.scale.set(width, len * flicker, width);
+      core.mesh.scale.set(width, len * 0.42 * flicker, width);
+
+      for (const l of layers) {
+        l.uniforms.uTime.value = time;
+        l.uniforms.uWobble.value = 0.7 + 0.5 * thrust;
+      }
+      outer.uniforms.uOpacity.value = (0.55 + 0.35 * thrust) * paintedOpacity;
+      core.uniforms.uOpacity.value = 0.9 * paintedOpacity;
     },
     dispose: () => {
-      geometry.dispose();
-      material.dispose();
+      for (const l of layers) {
+        l.geometry.dispose();
+        l.material.dispose();
+      }
     },
   };
 }
