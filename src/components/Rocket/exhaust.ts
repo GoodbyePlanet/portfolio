@@ -6,6 +6,10 @@
  * phase so the facets shimmer and the tip licks side to side; the fragment
  * shader lights every facet flat, matching the hull. Thrust drives length,
  * width and brightness, so the same meshes cover the idle burn and the launch.
+ *
+ * Behind them, a soft camera-facing glow stands in for bloom: a real bloom
+ * pass doesn't sit well on this transparent canvas or across the theme
+ * switch, and one additive card gives the flame a halo for almost nothing.
  */
 import * as THREE from 'three';
 
@@ -86,6 +90,31 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
+const glowVertexShader = /* glsl */ `
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv * 2.0 - 1.0;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const glowFragmentShader = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying vec2 vUv;
+
+  void main() {
+    // Gaussian falloff, weighted toward the nozzle end where the flame is
+    // hottest.
+    float d2 = dot(vUv, vUv);
+    float g = exp(-d2 * 3.2) * mix(0.55, 1.0, smoothstep(-1.0, 0.6, vUv.y));
+    // Strength goes in alpha, like the flame's: the canvas is transparent,
+    // so an opaque alpha would stamp the whole card onto the page.
+    gl_FragColor = vec4(uColor, g * uOpacity);
+  }
+`;
+
 /** Teardrop that swells just under the nozzle, then tapers to a point. */
 function flameGeometry(radius: number): THREE.LatheGeometry {
   const pts: THREE.Vector2[] = [];
@@ -141,6 +170,30 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
   );
   const layers = [outer, core];
 
+  const glowGeometry = new THREE.PlaneGeometry(1, 1);
+  const glowMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(colors.mid) },
+      uOpacity: { value: 0 },
+    },
+    vertexShader: glowVertexShader,
+    fragmentShader: glowFragmentShader,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+  glow.renderOrder = 0; // under the smoke and the flame
+  // Billboard: face the camera whatever the rocket's lean and pitch.
+  const parentQ = new THREE.Quaternion();
+  glow.onBeforeRender = (_r, _s, camera) => {
+    root.getWorldQuaternion(parentQ).invert();
+    glow.quaternion.copy(parentQ).multiply(camera.quaternion);
+    glow.updateMatrixWorld();
+  };
+  root.add(glow);
+
   // Painted rather than added, the plume would sit on the pale sky as a flat
   // opaque slab, so it is thinned out a little there.
   let paintedOpacity = 1;
@@ -150,6 +203,8 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
     setAdditive: (additive) => {
       const next = additive ? THREE.AdditiveBlending : THREE.NormalBlending;
       paintedOpacity = additive ? 1 : 0.8;
+      // On a pale sky an added halo only reads as a smudge.
+      glow.visible = additive;
       for (const l of layers) {
         if (l.material.blending === next) continue;
         l.material.blending = next;
@@ -161,6 +216,7 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
       outer.uniforms.uBottom.value.set(c.tail);
       core.uniforms.uTop.value.set(c.core);
       core.uniforms.uBottom.value.set(c.mid);
+      glowMaterial.uniforms.uColor.value.set(c.mid);
     },
     update: (time, thrust, boost) => {
       const len = THREE.MathUtils.lerp(3.2, 6.2, thrust) + 1.3 * boost;
@@ -177,12 +233,19 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
       }
       outer.uniforms.uOpacity.value = (0.55 + 0.35 * thrust) * paintedOpacity;
       core.uniforms.uOpacity.value = 0.9 * paintedOpacity;
+
+      // Centred a little below mid-flame so its top just reaches the bell.
+      glow.position.y = -len * 0.45 * flicker;
+      glow.scale.set(2.0 * width + 0.6 * thrust, len * 1.35, 1);
+      glowMaterial.uniforms.uOpacity.value = (0.5 + 0.4 * thrust + 0.15 * boost) * flicker;
     },
     dispose: () => {
       for (const l of layers) {
         l.geometry.dispose();
         l.material.dispose();
       }
+      glowGeometry.dispose();
+      glowMaterial.dispose();
     },
   };
 }
