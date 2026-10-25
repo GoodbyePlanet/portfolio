@@ -37,28 +37,32 @@
     50% { transform: translateY(-20px); }
 }
 
-/* Launch: anticipation crouch (squash) -> stretch -> accelerating ascent */
+/* Launch: anticipation crouch -> accelerating ascent. These keyframes only
+   move the rocket up the page; the squash, stretch, pitch and the shrink as
+   it flies away are done in 3D (see choreography() in Rocket3D.tsx), timed
+   to the same 2s. */
 .launching {
     animation: launch 2s forwards;
 }
 
 @keyframes launch {
-    0%   { transform: translateY(0) scaleX(1) scaleY(1); animation-timing-function: ease-out; }
-    20%  { transform: translateY(12px) scaleX(1.08) scaleY(0.92); animation-timing-function: ease-in; }
-    40%  { transform: translateY(-10vh) scaleX(0.9) scaleY(1.15); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.4); }
-    100% { transform: translateY(-120vh) scaleX(0.6) scaleY(0.6); }
+    0%   { transform: translateY(0); animation-timing-function: ease-out; }
+    20%  { transform: translateY(12px); animation-timing-function: ease-in; }
+    40%  { transform: translateY(-10vh); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.4); }
+    100% { transform: translateY(-120vh); }
 }
 
-/* Return: glide in, slight overshoot, then settle to rest */
+/* Return: glide in, slight overshoot, then settle to rest. The 3D side flies
+   it in from depth over the same 2.5s. */
 .returning {
     animation: returnFromBelow 2.5s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
 }
 
 @keyframes returnFromBelow {
-    0%   { transform: translateY(120vh) scale(0.4); opacity: 0; }
+    0%   { transform: translateY(120vh); opacity: 0; }
     20%  { opacity: 1; }
-    85%  { transform: translateY(-14px) scale(1.02); opacity: 1; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
+    85%  { transform: translateY(-14px); opacity: 1; }
+    100% { transform: translateY(0); opacity: 1; }
 }
 
 /* Rocket body — now only a layout box. It keeps the exact 70x180 footprint
@@ -99,7 +103,7 @@
     position: absolute;
     top: 174px;
     width: 44px;
-    height: 80px;
+    height: 120px;
     z-index: 20;
     background: transparent;
     cursor: pointer;

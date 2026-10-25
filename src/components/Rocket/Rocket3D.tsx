@@ -53,6 +53,67 @@ function readFlame(): ExhaustColors {
   };
 }
 
+/** Launch and return choreography in phase-local seconds. The CSS keyframes
+ *  only carry the rocket up and down the page; squash, depth and pitch happen
+ *  here, where perspective can do the shrinking instead of a flat scale. */
+const LAUNCH = {
+  crouch: 0.4, // matches the 20% crouch keyframe of the 2s CSS launch
+  stretch: 0.8,
+  settle: 1.3,
+  end: 2.0,
+  depth: 28, // world units pushed away by the end
+};
+const RETURN = {
+  arrive: 2.125, // the 85% overshoot keyframe of the 2.5s CSS return
+  end: 2.5,
+  depth: 40,
+  overshoot: 0.7,
+};
+
+const smooth = (u: number) => {
+  const c = THREE.MathUtils.clamp(u, 0, 1);
+  return c * c * (3 - 2 * c);
+};
+
+/** Root transform for a phase at phase-local time s. */
+function choreography(p: LaunchPhase, s: number) {
+  let squash = 0; // + crouches, - stretches
+  let z = 0;
+  let pitch = 0; // + nose toward the camera
+  if (p === 'launching') {
+    const L = LAUNCH;
+    if (s < L.crouch) {
+      squash = 0.08 * smooth(s / L.crouch);
+      pitch = 0.06 * smooth(s / L.crouch);
+    } else if (s < L.stretch) {
+      const u = smooth((s - L.crouch) / (L.stretch - L.crouch));
+      squash = THREE.MathUtils.lerp(0.08, -0.13, u);
+      pitch = THREE.MathUtils.lerp(0.06, -0.12, u);
+    } else {
+      const u = smooth((s - L.stretch) / (L.settle - L.stretch));
+      squash = THREE.MathUtils.lerp(-0.13, -0.04, u);
+      pitch = -0.12 - 0.18 * smooth((s - L.stretch) / (L.end - L.stretch));
+    }
+    // Accelerating away from the camera once it leaves the pad.
+    const a = Math.max(0, (s - L.crouch) / (L.end - L.crouch));
+    z = -L.depth * a * a;
+  } else if (p === 'returning') {
+    const R = RETURN;
+    if (s < R.arrive) {
+      const u = s / R.arrive;
+      const e = 1 - Math.pow(1 - u, 3); // the CSS return's strong ease-out
+      z = THREE.MathUtils.lerp(-R.depth, R.overshoot, e);
+      pitch = 0.25 * (1 - e);
+    } else {
+      const u = smooth((s - R.arrive) / (R.end - R.arrive));
+      z = R.overshoot * (1 - u);
+      // A small landing bob as it settles into the float.
+      squash = 0.04 * Math.sin(u * Math.PI);
+    }
+  }
+  return { squash, z, pitch };
+}
+
 /** The plume's mid tone as an opaque light colour (THREE.Color drops alpha). */
 function flameLightColor(): THREE.Color {
   return new THREE.Color(readFlame().mid);
@@ -246,6 +307,8 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     const tilt = { x: 0, y: 0 };
     let raf = 0;
     const clock = new THREE.Clock();
+    let lastPhase: LaunchPhase = phaseRef.current;
+    let phaseStart = 0;
 
     const setEngineLight = (t: number) => {
       const flicker = 0.85 + 0.1 * Math.sin(t * 31) + 0.05 * Math.sin(t * 57 + 1.7);
@@ -259,6 +322,10 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
       const p = phaseRef.current;
+      if (p !== lastPhase) {
+        lastPhase = p;
+        phaseStart = t;
+      }
 
       // Idle drifts lazily, or spins up while hovered; launch spins the hull
       // up and lights the engine; the return glides back down to the resting
@@ -282,8 +349,11 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       tilt.x += (wantX - tilt.x) * Math.min(1, dt * 2.5);
 
       const sway = p === 'idle' ? Math.sin(t * 0.55) * 0.035 : 0;
+      const c = choreography(p, t - phaseStart);
+      rocket.root.position.z = c.z;
+      rocket.root.scale.set(1 + c.squash * 0.9, 1 - c.squash, 1 + c.squash * 0.9);
       rocket.root.rotation.y = tilt.y;
-      rocket.root.rotation.x = tilt.x;
+      rocket.root.rotation.x = tilt.x + c.pitch;
       rocket.root.rotation.z = sway + (p === 'launching' ? Math.sin(t * 26) * 0.006 : 0);
 
       const wantBoost = p === 'idle' && boostRef.current ? 1 : 0;

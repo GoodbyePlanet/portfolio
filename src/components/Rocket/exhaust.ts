@@ -163,7 +163,7 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
       core.uniforms.uBottom.value.set(c.mid);
     },
     update: (time, thrust, boost) => {
-      const len = THREE.MathUtils.lerp(2.0, 5.5, thrust) + 1.1 * boost;
+      const len = THREE.MathUtils.lerp(3.2, 6.2, thrust) + 1.3 * boost;
       const width = THREE.MathUtils.lerp(0.85, 1.15, thrust);
       // Combustion never burns steady.
       const flicker = 0.94 + 0.06 * Math.sin(time * 23.0) * Math.sin(time * 7.1);
