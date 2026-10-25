@@ -8,14 +8,16 @@
 }
 
 /* Slow independent horizontal drift, layered on top of the vertical float
-   on .rocketFloat so the two transforms don't fight over the same element. */
+   on .rocketFloat so the two transforms don't fight over the same element.
+   It animates `translate`, not `transform`, so it leaves the responsive
+   scale on .rocketScale alone. */
 .rocketDrift {
     animation: rocketDrift 6s ease-in-out infinite;
 }
 
 @keyframes rocketDrift {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(2px); }
+    0%, 100% { translate: 0 0; }
+    50% { translate: 2px 0; }
 }
 
 /* Layer 2: phase motion (float / launch / return keyframes own transform) */

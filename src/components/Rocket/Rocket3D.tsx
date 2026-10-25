@@ -20,6 +20,9 @@ const CANVAS_H = 900;
 const CANVAS_TOP = -140; // px above the top of the box
 const PX_PER_UNIT = BOX_H / (BOX_TOP - NOZZLE_EXIT);
 const FOV = 30;
+/** Cursor parallax travel, edge to edge, in px. */
+const PARALLAX_X = 20;
+const PARALLAX_Y = 12;
 
 interface Rocket3DProps {
   phase: LaunchPhase;
@@ -304,7 +307,7 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     let yawSpeed = 0.16;
     let thrust = 0.12;
     let boostAmt = 0;
-    const tilt = { x: 0, y: 0 };
+    const lean = { x: 0, y: 0 }; // cursor offset from centre, -0.5..0.5
     let raf = 0;
     const clock = new THREE.Clock();
     let lastPhase: LaunchPhase = phaseRef.current;
@@ -340,20 +343,26 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       yaw += yawSpeed * dt;
       rocket.hull.rotation.y = yaw;
 
-      // Cursor leans the whole rocket a few degrees — the same parallax
-      // language the starfield uses, just in three dimensions.
+      // The cursor is the viewer's head: the rocket turns a few degrees to
+      // show the side the viewer has moved toward, and slides with the cursor
+      // further than the nearest star layer does (StarField's deepest layer
+      // moves ±4px), so it reads as the closest thing in the scene.
       const m = mouseRef?.current;
-      const wantY = m ? (m.x - 0.5) * 0.5 : 0;
-      const wantX = m ? (m.y - 0.5) * 0.34 : 0;
-      tilt.y += (wantY - tilt.y) * Math.min(1, dt * 2.5);
-      tilt.x += (wantX - tilt.x) * Math.min(1, dt * 2.5);
+      const wantX = m ? m.x - 0.5 : 0;
+      const wantY = m ? m.y - 0.5 : 0;
+      lean.x += (wantX - lean.x) * Math.min(1, dt * 2.5);
+      lean.y += (wantY - lean.y) * Math.min(1, dt * 2.5);
 
       const sway = p === 'idle' ? Math.sin(t * 0.55) * 0.035 : 0;
       const c = choreography(p, t - phaseStart);
-      rocket.root.position.z = c.z;
+      rocket.root.position.set(
+        (lean.x * PARALLAX_X) / PX_PER_UNIT,
+        (-lean.y * PARALLAX_Y) / PX_PER_UNIT,
+        c.z,
+      );
       rocket.root.scale.set(1 + c.squash * 0.9, 1 - c.squash, 1 + c.squash * 0.9);
-      rocket.root.rotation.y = tilt.y;
-      rocket.root.rotation.x = tilt.x + c.pitch;
+      rocket.root.rotation.y = lean.x * 0.5;
+      rocket.root.rotation.x = lean.y * 0.34 + c.pitch;
       rocket.root.rotation.z = sway + (p === 'launching' ? Math.sin(t * 26) * 0.006 : 0);
 
       const wantBoost = p === 'idle' && boostRef.current ? 1 : 0;
