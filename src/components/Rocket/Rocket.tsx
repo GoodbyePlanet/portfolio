@@ -2,7 +2,6 @@ import { useRef, useState, type RefObject } from 'react';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import type { MousePos } from '../../hooks/useParallax';
 import { Sprinkles } from '../Particles/Sprinkles';
-import { Smoke } from '../Particles/Smoke';
 import { Rocket3D } from './Rocket3D';
 import styles from './Rocket.module.css';
 
@@ -56,7 +55,6 @@ export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
       </div>
 
       <Sprinkles rocketRef={rocketRef} phase={phase} />
-      <Smoke rocketRef={rocketRef} phase={phase} />
     </div>
   );
 }

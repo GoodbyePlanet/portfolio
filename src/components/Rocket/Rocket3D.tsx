@@ -4,6 +4,7 @@ import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import type { MousePos } from '../../hooks/useParallax';
 import { buildRocket, BOX_TOP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
 import { createExhaust, type ExhaustColors } from './exhaust';
+import { createSmoke } from './smoke';
 import styles from './Rocket.module.css';
 
 /**
@@ -11,7 +12,7 @@ import styles from './Rocket.module.css';
  * the top of it (the stretched nose pokes above), nozzle exit at the bottom —
  * so the click target and the particle bursts that measure that box still
  * line up. The canvas is far
- * taller, hanging well below, because the shader plume lives in it too.
+ * taller, hanging well below, because the plume and the smoke live in it too.
  */
 const BOX_H = 180;
 const CANVAS_W = 400;
@@ -52,9 +53,17 @@ function readFlame(): ExhaustColors {
   };
 }
 
+/** The plume's mid tone as an opaque light colour (THREE.Color drops alpha). */
+function flameLightColor(): THREE.Color {
+  return new THREE.Color(readFlame().mid);
+}
+
 /**
- * Studio-in-a-box used only to bake an environment map: a graded sky dome plus
- * a few emissive cards that become the specular highlights on the hull.
+ * The scene around the rocket, baked into an environment map: a graded sky
+ * dome that turns atmosphere-blue below, where the Earth sits, plus a few
+ * emissive cards that become the specular highlights on the hull. The sun
+ * card sits on the right, the Earth's day side (see the terminator in
+ * Earth.module.css), so the planet and the rocket share one light.
  */
 function buildEnvScene(): { scene: THREE.Scene; dispose: () => void } {
   const scene = new THREE.Scene();
@@ -67,8 +76,8 @@ function buildEnvScene(): { scene: THREE.Scene; dispose: () => void } {
   const g = ctx.createLinearGradient(0, 0, 0, 256);
   g.addColorStop(0.0, '#0b1020');
   g.addColorStop(0.45, '#2a3550');
-  g.addColorStop(0.72, '#6f7b90');
-  g.addColorStop(1.0, '#141821');
+  g.addColorStop(0.72, '#5f7290');
+  g.addColorStop(1.0, '#1d3050'); // earthshine
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 4, 256);
   const skyTex = new THREE.CanvasTexture(c);
@@ -99,8 +108,8 @@ function buildEnvScene(): { scene: THREE.Scene; dispose: () => void } {
     scene.add(m);
   };
 
-  card(0xffffff, 6, 14, 22, [-12, 10, 14]); // key softbox
-  card(0x8fb6ff, 4, 10, 18, [16, 2, -12]); // cool rim
+  card(0xffffff, 6, 14, 22, [12, 10, 14]); // sun, on the day side
+  card(0x8fb6ff, 4, 10, 18, [-16, 2, -12]); // cool rim from the night side
   card(0xffb347, 2.2, 16, 8, [0, -14, 6]); // warm bounce from the exhaust side
 
   return {
@@ -168,15 +177,17 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     env.dispose();
     pmrem.dispose();
 
+    // Sun from the Earth's day side, a cool rim from the night side, and the
+    // atmosphere bouncing a little blue up onto the belly.
     const key = new THREE.DirectionalLight(0xfff3e2, 2.6);
-    key.position.set(-4, 5, 6);
+    key.position.set(4, 5, 6);
     scene.add(key);
 
     const rim = new THREE.DirectionalLight(0x9fc4ff, 3.2);
-    rim.position.set(5, 1.5, -5);
+    rim.position.set(-5, 1.5, -5);
     scene.add(rim);
 
-    const fill = new THREE.HemisphereLight(0xbcd2ff, 0x2a2f3a, 0.55);
+    const fill = new THREE.HemisphereLight(0xbcd2ff, 0x2a4266, 0.55);
     scene.add(fill);
 
     const palette = readPalette();
@@ -186,6 +197,32 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     const exhaust = createExhaust(NOZZLE_EXIT, readFlame());
     rocket.root.add(exhaust.root);
 
+    // The burn lights its own rocket: a point light just under the nozzle,
+    // parented to the rocket so it follows the lean, washes the fins and the
+    // lower hull warm and flickers with the plume.
+    const engineLight = new THREE.PointLight(flameLightColor(), 0, 0, 2);
+    engineLight.position.set(0, NOZZLE_EXIT - 0.35, 0);
+    rocket.root.add(engineLight);
+
+    const smoke = createSmoke();
+    smoke.setProjScale(
+      (CANVAS_H * renderer.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2))),
+    );
+    scene.add(smoke.root);
+
+    // The canvas rides on the DOM rocket (float, launch, return), so measure
+    // how far that box has moved since the first frame and hand the smoke the
+    // world offset that cancels it.
+    const body = host.parentElement!;
+    let origin: { x: number; y: number } | null = null;
+    const anchorSmoke = () => {
+      const r = body.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      origin ??= { x: cx, y: r.top };
+      const unit = PX_PER_UNIT * (r.height / BOX_H); // CSS scale included
+      smoke.setAnchor(-(cx - origin.x) / unit, (r.top - origin.y) / unit);
+    };
+
     // The light theme puts the rocket on a pale sky, so lift the ambient and
     // the exposure to stop the hull reading as a dark cut-out.
     const applyThemeLighting = () => {
@@ -194,7 +231,7 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       // over it instead of adding to it in the light theme.
       exhaust.setAdditive(!light);
       fill.intensity = light ? 1.5 : 0.55;
-      fill.groundColor.set(light ? 0xc8ccd4 : 0x2a2f3a);
+      fill.groundColor.set(light ? 0xc8ccd4 : 0x2a4266);
       rim.intensity = light ? 1.8 : 3.2;
       renderer.toneMappingExposure = light ? 1.25 : 1.05;
     };
@@ -209,6 +246,11 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     const tilt = { x: 0, y: 0 };
     let raf = 0;
     const clock = new THREE.Clock();
+
+    const setEngineLight = (t: number) => {
+      const flicker = 0.85 + 0.1 * Math.sin(t * 31) + 0.05 * Math.sin(t * 57 + 1.7);
+      engineLight.intensity = (3 + 16 * thrust + 6 * boostAmt) * flicker;
+    };
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
@@ -250,6 +292,9 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       rocket.setThrust(thrust);
       rocket.update(t);
       exhaust.update(t, thrust, boostAmt);
+      setEngineLight(t);
+      anchorSmoke();
+      smoke.update(dt, p !== 'launching', rocket.root, NOZZLE_EXIT);
       renderer.render(scene, camera);
     };
 
@@ -258,6 +303,7 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       rocket.setThrust(0.12);
       rocket.update(0);
       exhaust.update(0, 0.12, 0);
+      setEngineLight(0);
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(frame);
@@ -268,6 +314,7 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     const observer = new MutationObserver(() => {
       rocket.setPalette(readPalette());
       exhaust.setColors(readFlame());
+      engineLight.color = flameLightColor();
       applyThemeLighting();
       if (reduced) renderer.render(scene, camera);
     });
@@ -279,7 +326,8 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
-      scene.remove(rocket.root);
+      scene.remove(rocket.root, smoke.root);
+      smoke.dispose();
       exhaust.dispose();
       rocket.dispose();
       envRT.dispose();
