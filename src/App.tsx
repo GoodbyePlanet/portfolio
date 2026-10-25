@@ -69,7 +69,7 @@ export default function App() {
       <ShootingStars />
       <CursorTrail mouseRef={mouseRef} />
       <Earth />
-      <Rocket phase={phase} onLaunch={launch} onPhaseEnd={onPhaseEnd} mouseRef={mouseRef} />
+      <Rocket phase={phase} onLaunch={launch} onPhaseEnd={onPhaseEnd} />
       <span className={styles.tagline}>The universe rewards the curious.</span>
     </Scene>
   );

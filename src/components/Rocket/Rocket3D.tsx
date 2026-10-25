@@ -1,7 +1,6 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
-import type { MousePos } from '../../hooks/useParallax';
 import { buildRocket, BOX_TOP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
 import { createExhaust, type ExhaustColors } from './exhaust';
 import { createSmoke } from './smoke';
@@ -20,9 +19,9 @@ const CANVAS_H = 900;
 const CANVAS_TOP = -140; // px above the top of the box
 const PX_PER_UNIT = BOX_H / (BOX_TOP - NOZZLE_EXIT);
 const FOV = 30;
-/** Cursor parallax travel, edge to edge, in px. */
-const PARALLAX_X = 20;
-const PARALLAX_Y = 12;
+/** Resting yaw: a readable three-quarter view, porthole toward the viewer. */
+const REST_YAW = THREE.MathUtils.degToRad(-28);
+const TAU = Math.PI * 2;
 
 interface Rocket3DProps {
   phase: LaunchPhase;
@@ -30,7 +29,6 @@ interface Rocket3DProps {
   boost?: boolean;
   /** Hovering the hull spins it up while idle. */
   spin?: boolean;
-  mouseRef?: RefObject<MousePos>;
 }
 
 function readPalette(): RocketPalette {
@@ -182,7 +180,7 @@ function buildEnvScene(): { scene: THREE.Scene; dispose: () => void } {
   };
 }
 
-export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocket3DProps) {
+export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   // The render loop reads the phase without being torn down and rebuilt, so it
   // lives in a ref that a separate effect keeps in sync.
@@ -303,11 +301,11 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
 
     /* --- motion state ---------------------------------------------- */
 
-    let yaw = THREE.MathUtils.degToRad(-28); // start in a readable three-quarter
-    let yawSpeed = 0.16;
+    let yaw = REST_YAW;
+    let yawSpeed = 0;
+    let restYaw: number | null = REST_YAW;
     let thrust = 0.12;
     let boostAmt = 0;
-    const lean = { x: 0, y: 0 }; // cursor offset from centre, -0.5..0.5
     let raf = 0;
     const clock = new THREE.Clock();
     let lastPhase: LaunchPhase = phaseRef.current;
@@ -330,11 +328,21 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
         phaseStart = t;
       }
 
-      // Idle drifts lazily, or spins up while hovered; launch spins the hull
-      // up and lights the engine; the return glides back down to the resting
-      // cadence.
-      const idleYawSpeed = spinRef.current ? 1.6 : 0.16;
-      const targetYawSpeed = p === 'launching' ? 3.4 : p === 'returning' ? 1.1 : idleYawSpeed;
+      // Idle holds still and only spins while hovered; launch spins the hull
+      // up and lights the engine; the return slows it back down. Once nothing
+      // drives it, it coasts on to a resting three-quarter view, so it never
+      // stops with the porthole turned away. That rest is picked once, past
+      // where the spin would naturally run out, so the hull settles with a
+      // small swing back rather than going round again.
+      let targetYawSpeed: number;
+      if (p === 'launching') targetYawSpeed = 3.4;
+      else if (p === 'returning') targetYawSpeed = 1.1;
+      else if (spinRef.current) targetYawSpeed = 1.6;
+      else {
+        restYaw ??= REST_YAW + TAU * Math.ceil((yaw + yawSpeed * 0.6 - REST_YAW - 1e-3) / TAU);
+        targetYawSpeed = THREE.MathUtils.clamp((restYaw - yaw) * 1.5, -1.6, 1.6);
+      }
+      if (p !== 'idle' || spinRef.current) restYaw = null;
       const targetThrust = p === 'launching' ? 1 : p === 'returning' ? 0.45 : 0.12;
       const ease = p === 'launching' ? 6 : 2.2;
       yawSpeed += (targetYawSpeed - yawSpeed) * Math.min(1, dt * ease);
@@ -343,26 +351,11 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       yaw += yawSpeed * dt;
       rocket.hull.rotation.y = yaw;
 
-      // The cursor is the viewer's head: the rocket turns a few degrees to
-      // show the side the viewer has moved toward, and slides with the cursor
-      // further than the nearest star layer does (StarField's deepest layer
-      // moves ±4px), so it reads as the closest thing in the scene.
-      const m = mouseRef?.current;
-      const wantX = m ? m.x - 0.5 : 0;
-      const wantY = m ? m.y - 0.5 : 0;
-      lean.x += (wantX - lean.x) * Math.min(1, dt * 2.5);
-      lean.y += (wantY - lean.y) * Math.min(1, dt * 2.5);
-
       const sway = p === 'idle' ? Math.sin(t * 0.55) * 0.035 : 0;
       const c = choreography(p, t - phaseStart);
-      rocket.root.position.set(
-        (lean.x * PARALLAX_X) / PX_PER_UNIT,
-        (-lean.y * PARALLAX_Y) / PX_PER_UNIT,
-        c.z,
-      );
+      rocket.root.position.z = c.z;
       rocket.root.scale.set(1 + c.squash * 0.9, 1 - c.squash, 1 + c.squash * 0.9);
-      rocket.root.rotation.y = lean.x * 0.5;
-      rocket.root.rotation.x = lean.y * 0.34 + c.pitch;
+      rocket.root.rotation.x = c.pitch;
       rocket.root.rotation.z = sway + (p === 'launching' ? Math.sin(t * 26) * 0.006 : 0);
 
       const wantBoost = p === 'idle' && boostRef.current ? 1 : 0;
@@ -413,7 +406,7 @@ export function Rocket3D({ phase, boost = false, spin = false, mouseRef }: Rocke
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [mouseRef]);
+  }, []);
 
   return <div className={styles.canvasHost} ref={hostRef} aria-hidden="true" />;
 }

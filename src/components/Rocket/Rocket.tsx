@@ -1,6 +1,5 @@
-import { useRef, useState, type RefObject } from 'react';
+import { useRef, useState } from 'react';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
-import type { MousePos } from '../../hooks/useParallax';
 import { Sprinkles } from '../Particles/Sprinkles';
 import { Rocket3D } from './Rocket3D';
 import styles from './Rocket.module.css';
@@ -9,10 +8,9 @@ interface RocketProps {
   phase: LaunchPhase;
   onLaunch: () => void;
   onPhaseEnd: () => void;
-  mouseRef?: RefObject<MousePos>;
 }
 
-export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
+export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
   const rocketRef = useRef<HTMLDivElement>(null);
   const [boost, setBoost] = useState(false);
   const [spin, setSpin] = useState(false);
@@ -44,7 +42,7 @@ export function Rocket({ phase, onLaunch, onPhaseEnd, mouseRef }: RocketProps) {
             keeps the exact footprint the CSS rocket had so the click target
             and the particle bursts still line up. */}
         <div className={styles.rocketBody}>
-          <Rocket3D phase={phase} boost={boost} spin={spin} mouseRef={mouseRef} />
+          <Rocket3D phase={phase} boost={boost} spin={spin} />
         </div>
 
         <div
