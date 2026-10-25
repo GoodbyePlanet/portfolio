@@ -1,16 +1,9 @@
-.sprinkle {
+/* Full-viewport layer the sprinkles are drawn into (see sprinkleField.ts). */
+.canvas {
     position: fixed;
-    width: 3px;
-    height: 3px;
-    background: var(--sprinkle-color);
-    box-shadow: 0 0 6px var(--sprinkle-color);
-    border-radius: 50%;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     pointer-events: none;
     z-index: 100;
-    animation: sprinkleFall var(--duration) linear forwards;
-}
-
-@keyframes sprinkleFall {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
 }

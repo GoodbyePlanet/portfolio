@@ -1,14 +1,8 @@
-import { useEffect, useCallback, useState, useRef, type RefObject } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useCallback, useRef, type RefObject } from 'react';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
+import { createSprinkleField, type SprinkleField } from './sprinkleField';
 import styles from './Particles.module.css';
 
-const SPREAD = 30;
-const DRIFT_X_RANGE = 150;
-const FALL_MIN = 100;
-const FALL_RANGE = 300;
-const MIN_DURATION = 0.5;
-const DURATION_RANGE = 0.7;
 const HOVER_BATCH = 12;
 const LAUNCH_COUNT = 40;
 const LAUNCH_INTERVAL = 20;
@@ -18,53 +12,51 @@ const RETURN_DELAY = 500;
 const EXHAUST_OFFSET_Y = 180;
 const RETURN_OFFSET_Y = 100;
 
-interface Sprinkle {
-  id: number;
-  x: number;
-  y: number;
-  tx: string;
-  ty: string;
-  duration: number;
-}
-
 interface SprinklesProps {
   rocketRef: RefObject<HTMLDivElement | null>;
   phase: LaunchPhase;
 }
 
-let nextId = 0;
+function readTheme() {
+  const root = document.documentElement;
+  return {
+    color: getComputedStyle(root).getPropertyValue('--sprinkle-color').trim() || 'white',
+    light: root.getAttribute('data-theme') === 'light',
+  };
+}
 
 export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
-  const [sprinkles, setSprinkles] = useState<Sprinkle[]>([]);
-  const timersRef = useRef<number[]>([]);
+  const fieldRef = useRef<SprinkleField | null>(null);
 
-  const spawn = useCallback((x: number, y: number) => {
-    const ox = (Math.random() - 0.5) * SPREAD;
-    const oy = (Math.random() - 0.5) * SPREAD;
-    const duration = Math.random() * DURATION_RANGE + MIN_DURATION;
+  // Declared first so the field exists before the effects below can spawn.
+  useEffect(() => {
+    const field = createSprinkleField();
+    field.canvas.className = styles.canvas;
+    field.canvas.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(field.canvas);
+    fieldRef.current = field;
 
-    const sprinkle: Sprinkle = {
-      id: nextId++,
-      x: x + ox,
-      y: y + oy,
-      tx: `${(Math.random() - 0.5) * DRIFT_X_RANGE}px`,
-      ty: `${Math.random() * FALL_RANGE + FALL_MIN}px`,
-      duration,
+    const applyTheme = () => {
+      const { color, light } = readTheme();
+      field.setTheme(color, light);
     };
+    applyTheme();
+    const observer = new MutationObserver(applyTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
 
-    setSprinkles((prev) => [...prev, sprinkle]);
-
-    const timer = window.setTimeout(() => {
-      setSprinkles((prev) => prev.filter((s) => s.id !== sprinkle.id));
-    }, duration * 1000 + 100);
-
-    timersRef.current.push(timer);
+    return () => {
+      observer.disconnect();
+      field.dispose();
+      field.canvas.remove();
+      fieldRef.current = null;
+    };
   }, []);
 
-  // Cleanup all timers on unmount
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => timers.forEach(clearTimeout);
+  const spawn = useCallback((x: number, y: number) => {
+    fieldRef.current?.spawn(x, y);
   }, []);
 
   // Hover sprinkles on exhaust area
@@ -140,22 +132,5 @@ export function Sprinkles({ rocketRef, phase }: SprinklesProps) {
     return () => timeouts.forEach(clearTimeout);
   }, [phase, rocketRef, spawn]);
 
-  return createPortal(
-    <>
-      {sprinkles.map((s) => (
-        <div
-          key={s.id}
-          className={styles.sprinkle}
-          style={{
-            left: s.x,
-            top: s.y,
-            '--tx': s.tx,
-            '--ty': s.ty,
-            '--duration': `${s.duration}s`,
-          } as React.CSSProperties}
-        />
-      ))}
-    </>,
-    document.body
-  );
+  return null;
 }
