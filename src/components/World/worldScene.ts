@@ -28,6 +28,7 @@ export const SUN = new THREE.Vector3(4, 5, 6).normalize();
 const STAR_COUNT = 220;
 /** Every star is the same size on screen; depth shows only as parallax. */
 const STAR_PX = 1.8;
+const SATELLITE_PX = 5;
 
 /** Camera offset (degrees) while the constellation is still scattered. */
 const SCATTER_YAW = 9;
@@ -192,7 +193,7 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
   satGeo.setAttribute('position', new THREE.BufferAttribute(satPos, 3));
   const satMat = new THREE.ShaderMaterial({
     uniforms: {
-      uSize: { value: 3 },
+      uSize: { value: SATELLITE_PX },
       uColor: { value: new THREE.Color() },
       uOpacity: { value: 1 },
     },
@@ -262,7 +263,7 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
     }
     starGeo.attributes.position.needsUpdate = true;
     starMat.uniforms.uSize.value = STAR_PX * renderer.getPixelRatio();
-    satMat.uniforms.uSize.value = 3 * renderer.getPixelRatio();
+    satMat.uniforms.uSize.value = SATELLITE_PX * renderer.getPixelRatio();
 
     [...NAV_STARS, NAV_LABEL_POS].forEach((s, i) => {
       const z = (NAV_DEPTH[i] ?? NAV_DEPTH[0]) * dist;
