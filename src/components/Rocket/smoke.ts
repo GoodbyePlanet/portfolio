@@ -14,7 +14,6 @@ const MAX = 32;
 const EMIT_EVERY = 0.12; // s
 /** Diameter at birth in world units; a puff grows 4x over its life. */
 const SIZE = 0.34;
-const OPACITY = 0.08;
 
 export interface Smoke {
   root: THREE.Points;
@@ -23,6 +22,9 @@ export interface Smoke {
   setAnchor(x: number, y: number): void;
   /** Framebuffer px per world unit at view distance 1. */
   setProjScale(s: number): void;
+  /** Grey barely shows on the dark sky; the pale sky needs a warmer, denser
+   *  puff to show at all. */
+  setColor(color: string, opacity: number): void;
   /** emitter: the leaning rocket root; nozzleY in its local space. */
   update(dt: number, emitting: boolean, emitter: THREE.Object3D, nozzleY: number): void;
   dispose(): void;
@@ -55,7 +57,7 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-export function createSmoke(): Smoke {
+export function createSmoke(color: string, opacity: number): Smoke {
   const pos = new Float32Array(MAX * 3);
   const ageAttr = new Float32Array(MAX).fill(1);
   const start = new Float32Array(MAX * 3);
@@ -72,8 +74,8 @@ export function createSmoke(): Smoke {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       uProjScale: { value: 1 },
-      uColor: { value: new THREE.Color(0.69, 0.69, 0.73) },
-      uOpacity: { value: OPACITY },
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
     },
     vertexShader,
     fragmentShader,
@@ -116,6 +118,10 @@ export function createSmoke(): Smoke {
     setAnchor: (x, y) => root.position.set(x, y, 0),
     setProjScale: (s) => {
       material.uniforms.uProjScale.value = s;
+    },
+    setColor: (c, o) => {
+      material.uniforms.uColor.value.set(c);
+      material.uniforms.uOpacity.value = o;
     },
     update: (dt, emitting, emitter, nozzleY) => {
       if (emitting) {

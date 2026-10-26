@@ -56,6 +56,14 @@ function readFlame(): ExhaustColors {
   };
 }
 
+function readSmoke(): { color: string; opacity: number } {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    color: s.getPropertyValue('--smoke-color').trim() || '#d8d8de',
+    opacity: parseFloat(s.getPropertyValue('--smoke-opacity')) || 0.08,
+  };
+}
+
 /** Launch and return choreography in phase-local seconds. The CSS keyframes
  *  only carry the rocket up and down the page; squash, depth and pitch happen
  *  here, where perspective can do the shrinking instead of a flat scale. */
@@ -275,7 +283,8 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
     engineLight.position.set(0, NOZZLE_EXIT - 0.35, 0);
     rocket.root.add(engineLight);
 
-    const smoke = createSmoke();
+    const smokeLook = readSmoke();
+    const smoke = createSmoke(smokeLook.color, smokeLook.opacity);
     smoke.setProjScale(
       (CANVAS_H * renderer.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2))),
     );
@@ -399,6 +408,8 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
     const observer = new MutationObserver(() => {
       rocket.setPalette(readPalette());
       exhaust.setColors(readFlame());
+      const { color, opacity } = readSmoke();
+      smoke.setColor(color, opacity);
       engineLight.color = flameLightColor();
       applyThemeLighting();
       if (reduced) renderer.render(scene, camera);

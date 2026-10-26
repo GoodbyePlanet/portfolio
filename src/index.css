@@ -28,9 +28,10 @@
     --flame-core-mid: rgba(224, 119, 26, 0.85);
     --flame-outer-top: #f2f4f8;
     --flame-outer-end: rgba(200, 204, 212, 0.5);
+    --smoke-color: #d8d8de;
+    --smoke-opacity: 0.08;
     --exhaust-glow: rgba(200, 200, 200, 0.1);
     --sprinkle-color: white;
-    --smoke-opacity: 0.3;
 
     /* HUD Panel */
     --hud-border: rgba(255, 255, 255, 0.15);
@@ -75,9 +76,10 @@
     --flame-core-mid: rgba(217, 127, 30, 0.75);
     --flame-outer-top: rgba(217, 127, 30, 0.75);
     --flame-outer-end: rgba(120, 70, 20, 0.4);
+    --smoke-color: #c9a184;
+    --smoke-opacity: 0.28;
     --exhaust-glow: rgba(50, 50, 50, 0.1);
-    --sprinkle-color: #000000;
-    --smoke-opacity: 0.2;
+    --sprinkle-color: var(--smoke-color);
 
     /* HUD Panel */
     --hud-border: rgba(60, 60, 70, 0.5);
