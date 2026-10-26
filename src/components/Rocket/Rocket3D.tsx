@@ -4,6 +4,7 @@ import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import { buildRocket, BOX_TOP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
 import { createExhaust, type ExhaustColors } from './exhaust';
 import { createSmoke } from './smoke';
+import { horizon } from '../World/sceneBus';
 import styles from './Rocket.module.css';
 
 /**
@@ -252,6 +253,13 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
     const fill = new THREE.HemisphereLight(0xbcd2ff, 0x2a4266, 0.55);
     scene.add(fill);
 
+    // Light thrown back up off the planet, growing as the hull nears the
+    // horizon: barely there at rest, strong as it comes back in from below.
+    const earthshine = new THREE.DirectionalLight(0x8fb0e0, 0);
+    earthshine.position.set(1, -5, 2.5);
+    scene.add(earthshine);
+    let earthshineMax = 1.6;
+
     const palette = readPalette();
     const rocket = buildRocket(palette);
     scene.add(rocket.root);
@@ -277,8 +285,7 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
     // world offset that cancels it.
     const body = host.parentElement!;
     let origin: { x: number; y: number } | null = null;
-    const anchorSmoke = () => {
-      const r = body.getBoundingClientRect();
+    const anchorSmoke = (r: DOMRect) => {
       const cx = r.left + r.width / 2;
       origin ??= { x: cx, y: r.top };
       const unit = PX_PER_UNIT * (r.height / BOX_H); // CSS scale included
@@ -295,6 +302,7 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
       fill.intensity = light ? 1.5 : 0.55;
       fill.groundColor.set(light ? 0xc8ccd4 : 0x2a4266);
       rim.intensity = light ? 1.8 : 3.2;
+      earthshineMax = light ? 0.6 : 1.6;
       renderer.toneMappingExposure = light ? 1.25 : 1.05;
     };
     applyThemeLighting();
@@ -365,7 +373,11 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
       rocket.update(t);
       exhaust.update(t, thrust, boostAmt);
       setEngineLight(t);
-      anchorSmoke();
+      const box = body.getBoundingClientRect();
+      anchorSmoke(box);
+      const gap = horizon.y - box.bottom;
+      const near = THREE.MathUtils.clamp(1 - gap / (0.6 * window.innerHeight), 0, 1);
+      earthshine.intensity = earthshineMax * near * near;
       smoke.update(dt, p !== 'launching', rocket.root, NOZZLE_EXIT);
       renderer.render(scene, camera);
     };

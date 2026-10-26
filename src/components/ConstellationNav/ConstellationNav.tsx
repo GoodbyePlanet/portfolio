@@ -1,13 +1,17 @@
-import { type CSSProperties } from 'react';
+import { useCallback, useLayoutEffect, useRef, type CSSProperties } from 'react';
 import {
   type NavState,
   NAV_STARS,
   NAV_EDGES,
-  NAV_LABEL_POS,
   BEACONS,
   segmentOf,
 } from '../../hooks/useConstellationNav';
+import { navScreen, subscribeNavScreen } from '../World/sceneBus';
 import styles from './ConstellationNav.module.css';
+
+const LABEL = NAV_STARS.length;
+const sx = (i: number) => navScreen[i * 2];
+const sy = (i: number) => navScreen[i * 2 + 1];
 
 interface Props {
   state: NavState;
@@ -16,23 +20,51 @@ interface Props {
 
 export function ConstellationNav({ state, onStarClick }: Props) {
   const { clickedSegments, completed } = state;
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // The stars live at different depths in the 3D world, which projects them
+  // onto the viewport every time its camera moves; follow along here without
+  // re-rendering. Each element names the star(s) it tracks in data attributes.
+  const place = useCallback(() => {
+    const root = containerRef.current;
+    if (!root) return;
+    root.querySelectorAll<HTMLElement>('[data-star]').forEach((el) => {
+      const i = Number(el.dataset.star);
+      el.style.left = `${sx(i)}px`;
+      el.style.top = `${sy(i)}px`;
+    });
+    root.querySelectorAll<SVGLineElement>('line[data-from]').forEach((el) => {
+      const a = Number(el.dataset.from);
+      const b = Number(el.dataset.to);
+      el.setAttribute('x1', String(sx(a)));
+      el.setAttribute('y1', String(sy(a)));
+      el.setAttribute('x2', String(sx(b)));
+      el.setAttribute('y2', String(sy(b)));
+    });
+    root.querySelectorAll<HTMLElement>('span[data-from]').forEach((el) => {
+      const a = Number(el.dataset.from);
+      const b = Number(el.dataset.to);
+      el.style.setProperty('--sx', `${sx(a)}px`);
+      el.style.setProperty('--sy', `${sy(a)}px`);
+      el.style.setProperty('--ex', `${sx(b)}px`);
+      el.style.setProperty('--ey', `${sy(b)}px`);
+    });
+  }, []);
+
+  useLayoutEffect(() => subscribeNavScreen(place), [place]);
+  // Newly drawn elements get placed before they are painted.
+  useLayoutEffect(place, [place, clickedSegments, completed]);
 
   return (
-    <div className={styles.container}>
-      {/* SVG lines between stars */}
-      <svg
-        className={styles.svg}
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
+    <div className={styles.container} ref={containerRef}>
+      {/* SVG lines between stars, in viewport px */}
+      <svg className={styles.svg}>
         {NAV_EDGES.map((edge) =>
           edge.segment < clickedSegments ? (
             <line
               key={`line-${edge.from}-${edge.to}`}
-              x1={NAV_STARS[edge.from].x}
-              y1={NAV_STARS[edge.from].y}
-              x2={NAV_STARS[edge.to].x}
-              y2={NAV_STARS[edge.to].y}
+              data-from={edge.from}
+              data-to={edge.to}
               className={[
                 styles.line,
                 edge.closing ? styles.lineClosing : '',
@@ -51,21 +83,15 @@ export function ConstellationNav({ state, onStarClick }: Props) {
         edge.segment < clickedSegments ? (
           <span
             key={`spark-${edge.from}-${edge.to}`}
+            data-from={edge.from}
+            data-to={edge.to}
             className={`${styles.spark} ${edge.closing ? styles.sparkClosing : ''}`}
-            style={
-              {
-                '--start-x': `${NAV_STARS[edge.from].x}%`,
-                '--start-y': `${NAV_STARS[edge.from].y}%`,
-                '--end-x': `${NAV_STARS[edge.to].x}%`,
-                '--end-y': `${NAV_STARS[edge.to].y}%`,
-              } as CSSProperties
-            }
           />
         ) : null,
       )}
 
       {/* Stars: lit segment stars + the single next beacon */}
-      {NAV_STARS.map((star, i) => {
+      {NAV_STARS.map((_, i) => {
         const segment = segmentOf(i);
         const isBeacon = BEACONS.includes(i);
         const isLit = segment < clickedSegments;
@@ -93,14 +119,9 @@ export function ConstellationNav({ state, onStarClick }: Props) {
         return (
           <button
             key={i}
+            data-star={i}
             className={className}
-            style={
-              {
-                left: `${star.x}%`,
-                top: `${star.y}%`,
-                '--twinkle-delay': `${twinkleDelay}s`,
-              } as CSSProperties
-            }
+            style={{ '--twinkle-delay': `${twinkleDelay}s` } as CSSProperties}
             onClick={() => onStarClick(i)}
             aria-label={`Rocket constellation beacon ${segment + 1}`}
           />
@@ -109,10 +130,7 @@ export function ConstellationNav({ state, onStarClick }: Props) {
 
       {/* Label appears once the rocket is complete */}
       {completed && (
-        <span
-          className={styles.label}
-          style={{ left: `${NAV_LABEL_POS.x}%`, top: `${NAV_LABEL_POS.y}%` }}
-        >
+        <span className={styles.label} data-star={LABEL}>
           IGNITION
         </span>
       )}

@@ -385,6 +385,28 @@
 
 /* ---- Responsive ---- */
 
+/* Cockpit wrap: each panel turns slightly toward the viewer about its outer
+   edge. The eye sits level with each panel's own middle, so the far edge
+   tapers evenly top and bottom instead of sagging toward the viewport
+   centre. will-change has the panel rasterised flat and then tilted as one
+   layer, so its text keeps a straight baseline. */
+@media (min-width: 769px) {
+    .hudPanel .hudFrame,
+    .hudRight .hudFrame {
+        will-change: transform;
+    }
+
+    .hudPanel .hudFrame {
+        transform: perspective(1600px) rotateY(6deg);
+        transform-origin: left center;
+    }
+
+    .hudRight .hudFrame {
+        transform: perspective(1600px) rotateY(-6deg);
+        transform-origin: right center;
+    }
+}
+
 @media (max-width: 1024px) {
     .hudPanel {
         width: 280px;

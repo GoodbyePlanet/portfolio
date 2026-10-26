@@ -2,15 +2,13 @@ import { useState, useEffect } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useParallax } from './hooks/useParallax';
 import { useLaunchSequence } from './hooks/useLaunchSequence';
-import { useConstellationNav } from './hooks/useConstellationNav';
+import { useConstellationNav, NUM_SEGMENTS } from './hooks/useConstellationNav';
 import { Scene } from './components/Scene/Scene';
 import { Nebula } from './components/Nebula/Nebula';
-import { StarField } from './components/Stars/StarField';
-import { Constellations } from './components/Constellations/Constellations';
+import { World } from './components/World/World';
 import { ConstellationNav } from './components/ConstellationNav/ConstellationNav';
 import { ShootingStars } from './components/ShootingStars/ShootingStars';
 import { CursorTrail } from './components/CursorTrail/CursorTrail';
-import { Earth } from './components/Earth/Earth';
 import { Rocket } from './components/Rocket/Rocket';
 import { HudPanel } from './components/HUD/HudPanel';
 import { HudRight } from './components/HUD/HudRight';
@@ -53,6 +51,10 @@ export default function App() {
     return () => timers.forEach(clearTimeout);
   }, [state.completed, isMobile]);
 
+  // The camera turns toward the view that lines the constellation up as it is
+  // drawn. Phones skip the constellation, so they start lined up.
+  const alignment = isMobile || state.completed ? 1 : state.clickedSegments / NUM_SEGMENTS;
+
   return (
     <Scene shake={isShaking}>
       <div className={styles.hudMobileContainer}>
@@ -63,12 +65,10 @@ export default function App() {
         />
       </div>
       <Nebula />
-      <StarField mouseRef={mouseRef} />
-      <Constellations mouseRef={mouseRef} />
+      <World mouseRef={mouseRef} alignment={alignment} />
       <ConstellationNav state={state} onStarClick={handleStarClick} />
       <ShootingStars />
       <CursorTrail mouseRef={mouseRef} />
-      <Earth />
       <Rocket phase={phase} onLaunch={launch} onPhaseEnd={onPhaseEnd} />
       <span className={styles.tagline}>The universe rewards the curious.</span>
     </Scene>
