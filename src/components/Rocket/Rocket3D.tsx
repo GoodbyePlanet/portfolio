@@ -49,9 +49,10 @@ function readFlame(): ExhaustColors {
   const v = (name: string, fallback: string) =>
     s.getPropertyValue(name).trim() || fallback;
   return {
-    core: v('--flame-core-top', '#fff4e0'),
-    mid: v('--flame-core-mid', 'rgba(255, 179, 71, 0.85)'),
-    tail: v('--flame-core-end', 'rgba(217, 127, 30, 0.35)'),
+    core: v('--flame-core-top', '#ffb347'),
+    mid: v('--flame-core-mid', 'rgba(224, 119, 26, 0.85)'),
+    outer: v('--flame-outer-top', '#f2f4f8'),
+    tail: v('--flame-outer-end', 'rgba(200, 204, 212, 0.5)'),
   };
 }
 

@@ -1,15 +1,16 @@
 /**
  * Low-poly engine plume.
  *
- * Two nested, faceted teardrops hanging from the nozzle: an amber outer flame
- * and a short white-hot core. The vertex shader wobbles each vertex on its own
+ * Two nested, faceted teardrops hanging from the nozzle: a pale outer flame
+ * and a short amber core. The vertex shader wobbles each vertex on its own
  * phase so the facets shimmer and the tip licks side to side; the fragment
  * shader lights every facet flat, matching the hull. Thrust drives length,
  * width and brightness, so the same meshes cover the idle burn and the launch.
  *
- * Behind them, a soft camera-facing glow stands in for bloom: a real bloom
+ * Around them, a faint camera-facing haze stands in for bloom: a real bloom
  * pass doesn't sit well on this transparent canvas or across the theme
- * switch, and one additive card gives the flame a halo for almost nothing.
+ * switch. It hugs the flame's own silhouette, widest at the nozzle and
+ * thinning to nothing past the tip, so it reads as heat rather than a halo.
  */
 import * as THREE from 'three';
 
@@ -20,16 +21,20 @@ const FLAME_R = 0.34;
 const CORE_R = 0.18;
 
 export interface ExhaustColors {
+  /** Inner core, nozzle end to tip. */
   core: string;
   mid: string;
+  /** Outer flame and its haze, nozzle end to tip. */
+  outer: string;
   tail: string;
 }
 
 export interface Exhaust {
   root: THREE.Group;
   setColors(c: ExhaustColors): void;
-  /** Additive over a dark sky; normal over a pale one, where adding light
-   *  would only wash the plume out. */
+  /** Outer flame additive over a dark sky; normal over a pale one, where
+   *  adding light would only wash the plume out. The core always paints, so
+   *  its colour survives on top of a white outer flame. */
   setAdditive(additive: boolean): void;
   /** thrust: 0 idle .. 1 launch. boost: extra length while hovered. */
   update(time: number, thrust: number, boost: number): void;
@@ -90,7 +95,7 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-const glowVertexShader = /* glsl */ `
+const hazeVertexShader = /* glsl */ `
   varying vec2 vUv;
 
   void main() {
@@ -99,19 +104,33 @@ const glowVertexShader = /* glsl */ `
   }
 `;
 
-const glowFragmentShader = /* glsl */ `
+const hazeFragmentShader = /* glsl */ `
   uniform vec3 uColor;
   uniform float uOpacity;
+  uniform float uTime;
   varying vec2 vUv;
 
   void main() {
-    // Gaussian falloff, weighted toward the nozzle end where the flame is
-    // hottest.
-    float d2 = dot(vUv, vUv);
-    float g = exp(-d2 * 3.2) * mix(0.55, 1.0, smoothstep(-1.0, 0.6, vUv.y));
+    // 0 at the nozzle (top of the card), 1 past the tip.
+    float along = 0.5 - 0.5 * vUv.y;
+    // The haze narrows with the flame and sways a little behind it.
+    float halfW = mix(0.5, 0.22, along);
+    float ax = abs(vUv.x - 0.06 * along * along * sin(uTime * 1.7));
+    // Bloom-like profile: a bright, sharp falloff hugging the flame over a
+    // wide, faint skirt. Both are windowed to zero well inside the card so
+    // its edges never show.
+    float tight = exp(-ax / (halfW * 0.4));
+    float skirt = exp(-(ax * ax) / (halfW * halfW) * 1.6);
+    float across = (0.5 * tight + 0.5 * skirt) * (1.0 - smoothstep(0.55, 1.0, ax));
+    // Eases in under the bell, hottest near the nozzle, gone past the tip.
+    float down = smoothstep(0.0, 0.2, along)
+      * (1.0 - smoothstep(0.3, 0.95, along))
+      * mix(1.0, 0.55, along);
+    // A slow breath, so it never sits perfectly still.
+    float breath = 0.9 + 0.1 * sin(uTime * 2.3 + along * 4.0);
     // Strength goes in alpha, like the flame's: the canvas is transparent,
     // so an opaque alpha would stamp the whole card onto the page.
-    gl_FragColor = vec4(uColor, g * uOpacity);
+    gl_FragColor = vec4(uColor, across * down * breath * uOpacity);
   }
 `;
 
@@ -132,7 +151,13 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
   // Start a touch inside the bell so the flame reads as coming out of it.
   root.position.y = nozzleY + 0.06;
 
-  const layer = (radius: number, top: THREE.Color, bottom: THREE.Color, order: number) => {
+  const layer = (
+    radius: number,
+    top: THREE.Color,
+    bottom: THREE.Color,
+    order: number,
+    blending: THREE.Blending,
+  ) => {
     const uniforms = {
       uTime: { value: 0 },
       uWobble: { value: 1 },
@@ -147,7 +172,7 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
       fragmentShader,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending,
       toneMapped: false,
     });
     const mesh = new THREE.Mesh(geometry, material);
@@ -158,41 +183,44 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
 
   const outer = layer(
     FLAME_R,
-    new THREE.Color(colors.mid),
+    new THREE.Color(colors.outer),
     new THREE.Color(colors.tail),
     2,
+    THREE.AdditiveBlending,
   );
   const core = layer(
     CORE_R,
     new THREE.Color(colors.core),
     new THREE.Color(colors.mid),
     3,
+    THREE.NormalBlending,
   );
   const layers = [outer, core];
 
-  const glowGeometry = new THREE.PlaneGeometry(1, 1);
-  const glowMaterial = new THREE.ShaderMaterial({
+  const hazeGeometry = new THREE.PlaneGeometry(1, 1);
+  const hazeMaterial = new THREE.ShaderMaterial({
     uniforms: {
-      uColor: { value: new THREE.Color(colors.mid) },
+      uColor: { value: new THREE.Color(colors.outer) },
       uOpacity: { value: 0 },
+      uTime: { value: 0 },
     },
-    vertexShader: glowVertexShader,
-    fragmentShader: glowFragmentShader,
+    vertexShader: hazeVertexShader,
+    fragmentShader: hazeFragmentShader,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     toneMapped: false,
   });
-  const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-  glow.renderOrder = 0; // under the smoke and the flame
+  const haze = new THREE.Mesh(hazeGeometry, hazeMaterial);
+  haze.renderOrder = 0; // under the smoke and the flame
   // Billboard: face the camera whatever the rocket's lean and pitch.
   const parentQ = new THREE.Quaternion();
-  glow.onBeforeRender = (_r, _s, camera) => {
+  haze.onBeforeRender = (_r, _s, camera) => {
     root.getWorldQuaternion(parentQ).invert();
-    glow.quaternion.copy(parentQ).multiply(camera.quaternion);
-    glow.updateMatrixWorld();
+    haze.quaternion.copy(parentQ).multiply(camera.quaternion);
+    haze.updateMatrixWorld();
   };
-  root.add(glow);
+  root.add(haze);
 
   // Painted rather than added, the plume would sit on the pale sky as a flat
   // opaque slab, so it is thinned out a little there.
@@ -203,20 +231,19 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
     setAdditive: (additive) => {
       const next = additive ? THREE.AdditiveBlending : THREE.NormalBlending;
       paintedOpacity = additive ? 1 : 0.8;
-      // On a pale sky an added halo only reads as a smudge.
-      glow.visible = additive;
-      for (const l of layers) {
-        if (l.material.blending === next) continue;
-        l.material.blending = next;
-        l.material.needsUpdate = true;
+      // On a pale sky an added haze only reads as a smudge.
+      haze.visible = additive;
+      if (outer.material.blending !== next) {
+        outer.material.blending = next;
+        outer.material.needsUpdate = true;
       }
     },
     setColors: (c) => {
-      outer.uniforms.uTop.value.set(c.mid);
+      outer.uniforms.uTop.value.set(c.outer);
       outer.uniforms.uBottom.value.set(c.tail);
       core.uniforms.uTop.value.set(c.core);
       core.uniforms.uBottom.value.set(c.mid);
-      glowMaterial.uniforms.uColor.value.set(c.mid);
+      hazeMaterial.uniforms.uColor.value.set(c.outer);
     },
     update: (time, thrust, boost) => {
       const len = THREE.MathUtils.lerp(3.2, 6.2, thrust) + 1.3 * boost;
@@ -224,7 +251,9 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
       // Combustion never burns steady.
       const flicker = 0.94 + 0.06 * Math.sin(time * 23.0) * Math.sin(time * 7.1);
 
-      outer.mesh.scale.set(width, len * flicker, width);
+      // The pale outer flame trails well past the amber core.
+      const outerLen = len * 1.4 * flicker;
+      outer.mesh.scale.set(width, outerLen, width);
       core.mesh.scale.set(width, len * 0.42 * flicker, width);
 
       for (const l of layers) {
@@ -234,18 +263,20 @@ export function createExhaust(nozzleY: number, colors: ExhaustColors): Exhaust {
       outer.uniforms.uOpacity.value = (0.55 + 0.35 * thrust) * paintedOpacity;
       core.uniforms.uOpacity.value = 0.9 * paintedOpacity;
 
-      // Centred a little below mid-flame so its top just reaches the bell.
-      glow.position.y = -len * 0.45 * flicker;
-      glow.scale.set(2.0 * width + 0.6 * thrust, len * 1.35, 1);
-      glowMaterial.uniforms.uOpacity.value = (0.5 + 0.4 * thrust + 0.15 * boost) * flicker;
+      // Top edge just above the nozzle, running a little past the flame's tip.
+      const hazeLen = outerLen * 1.2;
+      haze.position.y = 0.3 - hazeLen * 0.5;
+      haze.scale.set(2.8 * width + 0.6 * thrust, hazeLen, 1);
+      hazeMaterial.uniforms.uTime.value = time;
+      hazeMaterial.uniforms.uOpacity.value = (0.65 + 0.3 * thrust + 0.12 * boost) * flicker;
     },
     dispose: () => {
       for (const l of layers) {
         l.geometry.dispose();
         l.material.dispose();
       }
-      glowGeometry.dispose();
-      glowMaterial.dispose();
+      hazeGeometry.dispose();
+      hazeMaterial.dispose();
     },
   };
 }
