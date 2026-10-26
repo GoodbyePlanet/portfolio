@@ -40,7 +40,7 @@ function readPalette(): RocketPalette {
     body: v('--rocket-body', '#e6e6e6'),
     dark: v('--rocket-dark', '#151515'),
     accent: v('--rocket-accent', '#e2463a'),
-    windowGlow: v('--window-glow', 'rgba(100, 180, 255, 0.4)'),
+    windowGlow: v('--window-glow', '#ffd9a0'),
   };
 }
 

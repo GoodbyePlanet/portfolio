@@ -22,7 +22,7 @@
     --atmosphere-glow-sm: rgba(255, 255, 255, 0.2);
     --window-bg: #111;
     --window-border: #666;
-    --window-glow: rgba(100, 180, 255, 0.4);
+    --window-glow: #ffd9a0;
     --fin-center-color: var(--rocket-dark);
     --flame-core-top: #ffb347;
     --flame-core-mid: rgba(224, 119, 26, 0.85);
@@ -70,7 +70,7 @@
     --atmosphere-glow-sm: rgba(0, 0, 0, 0.35);
     --window-bg: #111;
     --window-border: #666;
-    --window-glow: rgba(100, 180, 255, 0.35);
+    --window-glow: #f2b872;
     --fin-center-color: #151515;
     --flame-core-top: #c9660a;
     --flame-core-mid: rgba(217, 127, 30, 0.75);

@@ -201,7 +201,7 @@ export function buildRocket(palette: RocketPalette): RocketModel {
 
   const glassMat = track(
     new THREE.MeshStandardMaterial({
-      color: '#1a2350',
+      color: '#1c1a1f',
       emissive: new THREE.Color(palette.windowGlow),
       emissiveIntensity: 1,
       roughness: 0.12,
@@ -313,8 +313,8 @@ export function buildRocket(palette: RocketPalette): RocketModel {
 
     // Cabin light breathes; glass and halo swell together.
     const breath = 0.5 + 0.5 * Math.sin(time * 1.2);
-    glassMat.emissiveIntensity = 0.85 + 0.35 * breath;
-    haloUniforms.uIntensity.value = 0.55 + 0.3 * breath;
+    glassMat.emissiveIntensity = 0.55 + 0.25 * breath;
+    haloUniforms.uIntensity.value = 0.33 + 0.18 * breath;
   };
 
   return {
