@@ -60,9 +60,9 @@
     --rocket-shadow: #999999;
     --rocket-dark: #151515;
     --rocket-accent: var(--accent-amber);
-    --star-color: #555;
-    --star-opacity: 0.3;
-    --star-peak-opacity: 0.85;
+    --star-color: #2a2e36;
+    --star-opacity: 0.55;
+    --star-peak-opacity: 1;
     --nebula-opacity: 0.05;
     --shooting-star-color: rgba(80,80,80,0.6);
     --atmosphere-glow: rgba(0, 0, 0, 0.3);
