@@ -225,7 +225,7 @@ export function buildRocket(palette: RocketPalette): RocketModel {
   // Soft halo hung just in front of the window: brightest at the glass, then
   // falling off a little past the frame. Being a flat card on the porthole, it
   // thins out as the window turns away and the hull hides it round the back.
-  const HALO_HALF = PORT_R * 2.1;
+  const HALO_HALF = PORT_R * 2.4;
   const haloUniforms = {
     uColor: { value: new THREE.Color(palette.windowGlow) },
     uIntensity: { value: 1 },
@@ -247,7 +247,7 @@ export function buildRocket(palette: RocketPalette): RocketModel {
         void main() {
           float d = length(vUv - 0.5) * 2.0;     // 0 centre, 1 card edge
           float edge = ${(PORT_R / HALO_HALF).toFixed(3)};
-          float glow = exp(-max(d - edge * 0.6, 0.0) * 5.5);
+          float glow = exp(-max(d - edge * 0.6, 0.0) * 4.8);
           glow *= 1.0 - smoothstep(0.7, 1.0, d);
           gl_FragColor = vec4(uColor * glow * uIntensity, glow * uIntensity);
         }
@@ -313,8 +313,8 @@ export function buildRocket(palette: RocketPalette): RocketModel {
 
     // Cabin light breathes; glass and halo swell together.
     const breath = 0.5 + 0.5 * Math.sin(time * 1.2);
-    glassMat.emissiveIntensity = 0.55 + 0.25 * breath;
-    haloUniforms.uIntensity.value = 0.33 + 0.18 * breath;
+    glassMat.emissiveIntensity = 0.8 + 0.25 * breath;
+    haloUniforms.uIntensity.value = 0.5 + 0.2 * breath;
   };
 
   return {
