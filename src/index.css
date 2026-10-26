@@ -11,6 +11,7 @@
     --rocket-body: #e6e6e6;
     --rocket-shadow: #999999;
     --rocket-dark: #151515;
+    --rocket-accent: var(--accent-amber);
     --star-color: white;
     --star-opacity: 0.1;
     --star-peak-opacity: 0.8;
@@ -59,9 +60,10 @@
     --rocket-body: #e6e6e6;
     --rocket-shadow: #999999;
     --rocket-dark: #151515;
+    --rocket-accent: var(--accent-amber);
     --star-color: #555;
-    --star-opacity: 0.08;
-    --star-peak-opacity: 0.4;
+    --star-opacity: 0.3;
+    --star-peak-opacity: 0.85;
     --nebula-opacity: 0.05;
     --shooting-star-color: rgba(80,80,80,0.6);
     --atmosphere-glow: rgba(0, 0, 0, 0.3);

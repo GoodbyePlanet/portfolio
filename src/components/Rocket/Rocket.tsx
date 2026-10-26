@@ -1,7 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import { Sprinkles } from '../Particles/Sprinkles';
-import { Smoke } from '../Particles/Smoke';
+import { Rocket3D } from './Rocket3D';
 import styles from './Rocket.module.css';
 
 interface RocketProps {
@@ -12,6 +12,8 @@ interface RocketProps {
 
 export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
   const rocketRef = useRef<HTMLDivElement>(null);
+  const [boost, setBoost] = useState(false);
+  const [spin, setSpin] = useState(false);
 
   const phaseClass = styles[phase] || '';
 
@@ -25,32 +27,32 @@ export function Rocket({ phase, onLaunch, onPhaseEnd }: RocketProps) {
         className={`${styles.rocketFloat} ${phaseClass}`}
         onAnimationEnd={(e) => {
           // Only this layer's own finite launch/return animations reach here;
-          // the idle float and flame burn animations loop forever.
+          // the idle float animation loops forever.
           if (e.target === e.currentTarget) onPhaseEnd();
         }}
       >
-        <div className={styles.clickHint} onClick={onLaunch} />
+        <div
+          className={styles.clickHint}
+          onClick={onLaunch}
+          onMouseEnter={() => setSpin(true)}
+          onMouseLeave={() => setSpin(false)}
+        />
 
-        <div className={`${styles.fin} ${styles.finLeft}`} />
-        <div className={`${styles.fin} ${styles.finRight}`} />
+        {/* Hull and plume are both drawn by three.js inside this box, which
+            keeps the exact footprint the CSS rocket had so the click target
+            and the particle bursts still line up. */}
         <div className={styles.rocketBody}>
-          <div className={styles.window} />
-          <div className={styles.finCenter} />
-          <span className={styles.rcsPuff} />
+          <Rocket3D phase={phase} boost={boost} spin={spin} />
         </div>
 
-        <div className={styles.exhaustGlow} />
-
-        <div className={styles.exhaustTrigger} />
-
-        <div className={styles.exhaustVisuals}>
-          <div className={styles.flameOuter} />
-          <div className={styles.flameCore} />
-        </div>
+        <div
+          className={styles.exhaustTrigger}
+          onMouseEnter={() => setBoost(true)}
+          onMouseLeave={() => setBoost(false)}
+        />
       </div>
 
       <Sprinkles rocketRef={rocketRef} phase={phase} />
-      <Smoke rocketRef={rocketRef} phase={phase} />
     </div>
   );
 }

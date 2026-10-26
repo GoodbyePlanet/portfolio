@@ -8,14 +8,16 @@
 }
 
 /* Slow independent horizontal drift, layered on top of the vertical float
-   on .rocketFloat so the two transforms don't fight over the same element. */
+   on .rocketFloat so the two transforms don't fight over the same element.
+   It animates `translate`, not `transform`, so it leaves the responsive
+   scale on .rocketScale alone. */
 .rocketDrift {
     animation: rocketDrift 6s ease-in-out infinite;
 }
 
 @keyframes rocketDrift {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(2px); }
+    0%, 100% { translate: 0 0; }
+    50% { translate: 2px 0; }
 }
 
 /* Layer 2: phase motion (float / launch / return keyframes own transform) */
@@ -37,226 +39,87 @@
     50% { transform: translateY(-20px); }
 }
 
-/* Exhaust glow breathes in sync with the float (brightest at the apex) */
-.idle .exhaustGlow {
-    animation: glowPulse 4s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-    0%, 100% { opacity: 0.65; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.12); }
-}
-
-/* Launch: anticipation crouch (squash) -> stretch -> accelerating ascent */
+/* Launch: anticipation crouch -> accelerating ascent. These keyframes only
+   move the rocket up the page; the squash, stretch, pitch and the shrink as
+   it flies away are done in 3D (see choreography() in Rocket3D.tsx), timed
+   to the same 2s. */
 .launching {
     animation: launch 2s forwards;
 }
 
 @keyframes launch {
-    0%   { transform: translateY(0) scaleX(1) scaleY(1); animation-timing-function: ease-out; }
-    20%  { transform: translateY(12px) scaleX(1.08) scaleY(0.92); animation-timing-function: ease-in; }
-    40%  { transform: translateY(-10vh) scaleX(0.9) scaleY(1.15); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.4); }
-    100% { transform: translateY(-120vh) scaleX(0.6) scaleY(0.6); }
+    0%   { transform: translateY(0); animation-timing-function: ease-out; }
+    20%  { transform: translateY(12px); animation-timing-function: ease-in; }
+    40%  { transform: translateY(-10vh); animation-timing-function: cubic-bezier(0.6, 0, 1, 0.4); }
+    100% { transform: translateY(-120vh); }
 }
 
-/* Return: glide in, slight overshoot, then settle to rest */
+/* Return: glide in, slight overshoot, then settle to rest. The 3D side flies
+   it in from depth over the same 2.5s. */
 .returning {
     animation: returnFromBelow 2.5s cubic-bezier(0.0, 0.0, 0.2, 1) forwards;
 }
 
 @keyframes returnFromBelow {
-    0%   { transform: translateY(120vh) scale(0.4); opacity: 0; }
+    0%   { transform: translateY(120vh); opacity: 0; }
     20%  { opacity: 1; }
-    85%  { transform: translateY(-14px) scale(1.02); opacity: 1; }
-    100% { transform: translateY(0) scale(1); opacity: 1; }
+    85%  { transform: translateY(-14px); opacity: 1; }
+    100% { transform: translateY(0); opacity: 1; }
 }
 
-/* Rocket body */
+/* Rocket body — now only a layout box. It keeps the exact 70x180 footprint
+   the CSS rocket had, so every exhaust layer positioned against it still
+   lines up; the visible hull is the three.js canvas centred inside it. */
 .rocketBody {
     position: relative;
     width: 70px;
     height: 180px;
-    background: linear-gradient(to right, var(--rocket-body) 40%, var(--rocket-shadow));
-    border-radius: 50% 50% 10% 10%;
     z-index: 5;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    transition: background 0.8s ease;
 }
 
-.window {
+/* Zero-size anchor at the top centre of the box; the canvas hangs off it,
+   reaching far below so the shader plume has room. */
+.canvasHost {
     position: absolute;
-    top: 40px;
     left: 50%;
-    transform: translateX(-50%);
-    width: 35px;
-    height: 35px;
-    background: var(--window-bg);
-    border: 3px solid var(--window-border);
-    border-radius: 50%;
-    box-shadow: 0 0 8px 2px var(--window-glow), inset 0 0 6px 1px var(--window-glow);
-    transition: box-shadow 0.3s ease;
-}
-
-.clickHint:hover ~ .rocketBody .window {
-    box-shadow: 0 0 18px 6px var(--window-glow), inset 0 0 12px 3px var(--window-glow);
-}
-
-.fin {
-    position: absolute;
-    bottom: 20px;
-    width: 30px;
-    height: 50px;
-    background: var(--rocket-dark);
-    z-index: 4;
-}
-
-.finLeft {
-    left: -25px;
-    border-radius: 80% 0 0 100%;
-    transform: rotate(-10deg);
-}
-
-.finRight {
-    right: -25px;
-    border-radius: 0 80% 100% 0;
-    transform: rotate(10deg);
-}
-
-/* Occasional RCS puff — a small wisp vents from the body every ~18s */
-.rcsPuff {
-    position: absolute;
-    top: 90px;
-    left: -4px;
-    width: 10px;
-    height: 6px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9) 0%, transparent 75%);
-    opacity: 0;
-    pointer-events: none;
-    animation: rcsPuffCycle 18s ease-out infinite;
-}
-
-@keyframes rcsPuffCycle {
-    0%, 96% { opacity: 0; transform: translate(0, 0) scale(0.6); }
-    97% { opacity: 0.8; transform: translate(-4px, -2px) scale(1); }
-    100% { opacity: 0; transform: translate(-14px, -6px) scale(1.6); }
-}
-
-.finCenter {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 4px;
-    height: 50px;
-    background: var(--fin-center-color);
-    z-index: 6;
-}
-
-/* Exhaust */
-.exhaustVisuals {
-    position: absolute;
-    top: 155px;
-    width: 60px;
-    z-index: 1;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-}
-
-.flameCore {
-    position: absolute;
     top: 0;
-    width: 24px;
-    height: 400px;
-    background: linear-gradient(to bottom,
-        var(--flame-core-top) 0%,
-        var(--flame-core-mid) 15%,
-        var(--flame-core-end) 45%,
-        transparent 100%
-    );
-    border-radius: 0 0 50% 50%;
-    filter: blur(4px);
-    animation: burn 0.1s infinite alternate;
-    transition: height 0.4s ease-out;
-}
-
-.flameOuter {
-    position: absolute;
-    top: 0;
-    width: 52px;
-    height: 480px;
-    background: linear-gradient(to bottom,
-        var(--flame-outer-top) 0%,
-        var(--flame-outer-mid) 35%,
-        var(--flame-outer-end) 65%,
-        transparent 100%
-    );
-    border-radius: 0 0 50% 50%;
-    filter: blur(10px);
-    opacity: 0.6;
-    animation: burn 0.15s infinite alternate-reverse;
-    transition: height 0.4s ease-out;
-}
-
-.exhaustGlow {
-    position: absolute;
-    top: 155px;
-    width: 200px;
-    height: 200px;
-    background: radial-gradient(circle, var(--exhaust-glow), transparent 70%);
+    width: 0;
+    height: 0;
     pointer-events: none;
-    z-index: 0;
-    filter: blur(20px);
-    transition: opacity 0.4s;
 }
 
-@keyframes burn {
-    0% { transform: scaleX(1); opacity: 1; }
-    100% { transform: scaleX(0.95); opacity: 0.9; }
+.canvas {
+    position: absolute;
+    left: -200px;
+    top: -140px;
+    width: 400px;
+    height: 900px;
+    pointer-events: none;
 }
 
-/* Launch-intensified exhaust */
-.launching .flameCore {
-    height: 600px;
-    width: 24px;
-    filter: blur(6px);
-}
-
-.launching .flameOuter {
-    height: 750px;
-    width: 55px;
-    opacity: 0.9;
-}
-
-/* Exhaust trigger (hover area) */
+/* Exhaust hover + particle anchor. The plume itself is drawn in the three.js
+   canvas; this is only an invisible hit area sized to the idle flame: from
+   the nozzle exit (180px) to roughly where it fades out, and narrow enough
+   to stay clear of the fin tips either side. */
 .exhaustTrigger {
     position: absolute;
-    top: 150px;
-    width: 80px;
-    height: 300px;
+    top: 174px;
+    width: 44px;
+    height: 120px;
     z-index: 20;
     background: transparent;
     cursor: pointer;
 }
 
-.exhaustTrigger:hover ~ .exhaustVisuals .flameCore {
-    height: 500px;
-}
-
-.exhaustTrigger:hover ~ .exhaustVisuals .flameOuter {
-    height: 600px;
-}
-
-/* Click hint */
+/* Click hint — starts above the box to cover the nose, which pokes ~23px
+   above it since the hull was stretched. */
 .clickHint {
     position: absolute;
-    top: 0;
+    top: -23px;
     left: 50%;
     transform: translateX(-50%);
     width: 80px;
-    height: 160px;
+    height: 183px;
     z-index: 25;
     cursor: pointer;
     border-radius: 50% 50% 10% 10%;
@@ -281,13 +144,11 @@
 /* Respect reduced-motion: drop the ambient float/vibration. The
    click-triggered launch/return still play so the theme toggle completes. */
 @media (prefers-reduced-motion: reduce) {
-    .idle,
-    .idle .exhaustGlow {
+    .idle {
         animation: none;
     }
 
-    .rocketDrift,
-    .rcsPuff {
+    .rocketDrift {
         animation: none;
     }
 }
