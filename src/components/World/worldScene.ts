@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import { NAV_STARS, NAV_LABEL_POS } from '../../hooks/useConstellationNav';
 import type { MousePos } from '../../hooks/useParallax';
+import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import { createEarth, type EarthColors } from './earth';
 import { navScreen, publishNavScreen, horizon } from './sceneBus';
 
@@ -25,7 +26,7 @@ const TAN = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
 /** The rocket's key light, so the planet and the hull share one sun. */
 export const SUN = new THREE.Vector3(4, 5, 6).normalize();
 
-const STAR_COUNT = 220;
+const STAR_COUNT = 270;
 /** Every star is the same size on screen; depth shows only as parallax. */
 const STAR_PX = 1.8;
 const SATELLITE_PX = 5;
@@ -36,6 +37,17 @@ const SCATTER_PITCH = -2.5;
 /** Cursor parallax, degrees at the viewport edge. */
 const PARALLAX_YAW = 0.6;
 const PARALLAX_PITCH = 0.35;
+/** Idle drift: a slow sway (degrees, seconds per cycle) that keeps the depth
+ *  of the star field readable with no cursor to move it. */
+const DRIFT_YAW = 2.5;
+const DRIFT_PITCH = 0.8;
+const DRIFT_YAW_PERIOD = 20;
+const DRIFT_PITCH_PERIOD = 14;
+/** How far the camera climbs after the rocket on launch, in viewport heights.
+ *  The horizon is nearer than the stars, so it sinks about twice as far. */
+const LAUNCH_LIFT = 0.1;
+/** The rocket crouches first (the 20% keyframe of its 2s CSS launch). */
+const LAUNCH_CROUCH = 0.4;
 
 /** Depth of each rocket-constellation star, as a fraction of the camera
  *  distance: alternating near and far so the scattered view looks random. */
@@ -126,6 +138,8 @@ export interface World {
   canvas: HTMLCanvasElement;
   /** 0 = constellation scattered, 1 = lined up into the rocket. */
   setAlignment(a: number): void;
+  /** The camera climbs after the rocket as it launches and sinks back as it returns. */
+  setPhase(phase: LaunchPhase): void;
   setTheme(colors: ThemeColors): void;
   dispose(): void;
 }
@@ -156,7 +170,8 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
   for (let i = 0; i < STAR_COUNT; i++) {
     // Wider than the viewport: the camera turns, and the edges must stay full.
     starSeed[i * 3] = -0.25 + Math.random() * 1.5;
-    starSeed[i * 3 + 1] = Math.random() * 0.95;
+    // Taller too: the launch lifts the camera, and stars must slide in from above.
+    starSeed[i * 3 + 1] = -0.22 + Math.random() * 1.17;
     starSeed[i * 3 + 2] = -(0.08 + Math.random() * 1.3);
     twinkle[i * 2] = Math.random();
     twinkle[i * 2 + 1] = 2 + Math.random() * 3;
@@ -344,6 +359,11 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
   let yawVel = 0;
   let pitchVel = 0;
   let par = { x: 0, y: 0 };
+  let drift = { x: 0, y: 0 };
+  let phase: LaunchPhase = 'idle';
+  let phaseStart = 0;
+  let lift = 0;
+  let liftVel = 0;
 
   const scatterTarget = () => {
     const off = Math.pow(1 - THREE.MathUtils.clamp(align, 0, 1), 1.2);
@@ -354,14 +374,16 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
   };
 
   const placeCamera = () => {
-    const y = yaw + par.x;
-    const p = pitch + par.y;
+    const y = yaw + par.x + drift.x;
+    const p = pitch + par.y + drift.y;
+    // The lift moves the camera and its target together, so the view climbs
+    // without tilting and nearer things sink faster than far ones.
     camera.position.set(
       dist * Math.sin(y) * Math.cos(p),
-      dist * Math.sin(p),
+      dist * Math.sin(p) + lift,
       dist * Math.cos(y) * Math.cos(p),
     );
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, lift, 0);
     camera.updateMatrixWorld();
     earth.follow(y, p);
   };
@@ -376,11 +398,27 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
     return v.z < 1;
   };
 
+  // The rocket constellation is seen through a camera of its own that skips
+  // the idle drift and the launch lift: its stars sit at scattered depths, so
+  // either would bend the outline out of shape. It rides the lift as a whole.
+  const navCamera = new THREE.PerspectiveCamera();
   const pt = { x: 0, y: 0 };
   const publishNav = () => {
+    const y = yaw + par.x;
+    const p = pitch + par.y;
+    navCamera.position.set(
+      dist * Math.sin(y) * Math.cos(p),
+      dist * Math.sin(p),
+      dist * Math.cos(y) * Math.cos(p),
+    );
+    navCamera.lookAt(0, 0, 0);
+    navCamera.updateMatrixWorld();
+    navCamera.projectionMatrix.copy(camera.projectionMatrix);
     let moved = false;
-    navWorld.forEach((p, i) => {
-      toScreen(p, pt);
+    navWorld.forEach((np, i) => {
+      v.copy(np).project(navCamera);
+      pt.x = (v.x + 1) * 0.5 * w;
+      pt.y = (1 - v.y) * 0.5 * h + lift;
       if (Math.abs(navScreen[i * 2] - pt.x) > 0.05 || Math.abs(navScreen[i * 2 + 1] - pt.y) > 0.05) {
         moved = true;
       }
@@ -498,6 +536,19 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
       y: par.y + (want.y - par.y) * Math.min(1, dt * 3),
     };
 
+    drift = {
+      x: THREE.MathUtils.degToRad(DRIFT_YAW) * Math.sin((t / DRIFT_YAW_PERIOD) * Math.PI * 2),
+      y: THREE.MathUtils.degToRad(DRIFT_PITCH) * Math.sin((t / DRIFT_PITCH_PERIOD) * Math.PI * 2),
+    };
+
+    // Climb once the rocket leaves its crouch; ease back down, more slowly,
+    // while it returns. A critically damped spring, so it never bounces.
+    const climbing = phase === 'launching' && t - phaseStart > LAUNCH_CROUCH;
+    const liftTarget = climbing ? LAUNCH_LIFT * h : 0;
+    const lk = climbing ? 9 : 5.5;
+    liftVel += ((liftTarget - lift) * lk - liftVel * 2 * Math.sqrt(lk)) * dt;
+    lift += liftVel * dt;
+
     starMat.uniforms.uTime.value = t;
     earth.update(t);
     updateSatellite(t);
@@ -529,6 +580,11 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
       yaw = target.yaw;
       pitch = target.pitch;
       render();
+    },
+    setPhase: (next) => {
+      if (reduced || next === phase) return;
+      phase = next;
+      phaseStart = clock.elapsedTime;
     },
     setTheme: (colors) => {
       const first = !to;

@@ -65,7 +65,7 @@ export default function App() {
         />
       </div>
       <Nebula />
-      <World mouseRef={mouseRef} alignment={alignment} />
+      <World mouseRef={mouseRef} alignment={alignment} phase={phase} />
       <ConstellationNav state={state} onStarClick={handleStarClick} />
       <ShootingStars />
       <CursorTrail mouseRef={mouseRef} />
