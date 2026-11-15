@@ -7,6 +7,18 @@
     transition: transform 0.15s ease-out;
 }
 
+/* Desktop: the rocket grows with the viewport, so it fills the same share of
+   a large screen as it does of a 1440x900 one, and never drops below its
+   original size. tan(atan2()) is how CSS divides one length by another.
+   Scaling from the top edge keeps its centre at the same height, in viewport
+   terms, inside the constellation that frames it. */
+@media (min-width: 769px) {
+    .rocketScale {
+        transform-origin: 50% 0;
+        transform: scale(clamp(1, min(tan(atan2(100vh, 900px)), tan(atan2(100vw, 1440px))), 1.8));
+    }
+}
+
 /* Slow independent horizontal drift, layered on top of the vertical float
    on .rocketFloat so the two transforms don't fight over the same element.
    It animates `translate`, not `transform`, so it leaves the responsive

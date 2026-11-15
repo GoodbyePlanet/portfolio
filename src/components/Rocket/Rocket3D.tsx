@@ -285,15 +285,25 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
 
     const smokeLook = readSmoke();
     const smoke = createSmoke(smokeLook.color, smokeLook.opacity);
-    smoke.setProjScale(
-      (CANVAS_H * renderer.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2))),
-    );
     scene.add(smoke.root);
 
     // The canvas rides on the DOM rocket (float, launch, return), so measure
     // how far that box has moved since the first frame and hand the smoke the
     // world offset that cancels it.
     const body = host.parentElement!;
+
+    // The rocket grows with the viewport through a CSS scale, so the canvas
+    // is drawn with that many more pixels and stays sharp when enlarged.
+    const fitResolution = () => {
+      const cssScale = body.getBoundingClientRect().height / BOX_H || 1;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio * Math.max(1, cssScale), 3));
+      renderer.setSize(CANVAS_W, CANVAS_H, false);
+      smoke.setProjScale(
+        (CANVAS_H * renderer.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2))),
+      );
+    };
+    fitResolution();
+    window.addEventListener('resize', fitResolution);
     let origin: { x: number; y: number } | null = null;
     const anchorSmoke = (r: DOMRect) => {
       const cx = r.left + r.width / 2;
@@ -422,6 +432,7 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
+      window.removeEventListener('resize', fitResolution);
       scene.remove(rocket.root, smoke.root);
       smoke.dispose();
       exhaust.dispose();
