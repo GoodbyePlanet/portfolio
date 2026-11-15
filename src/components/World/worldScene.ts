@@ -69,6 +69,11 @@ const TRAIL_STEP = 8;
 const CURSOR_RADIUS = 120;
 const LINK_RADIUS = 150;
 const MAX_LINKS = 8;
+/** Cursor lines fade out over this many px as they near a HUD panel, and
+ *  are gone where they would cross one. */
+const PANEL_FADE = 48;
+/** How often the panels' boxes are re-read from the page (seconds). */
+const PANEL_POLL = 0.4;
 
 interface Layout {
   earthRadius: number;
@@ -507,12 +512,36 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
     trailGeo.setDrawRange(0, Math.max(0, trailCount - 1) * 6);
   };
 
+  // The HUD panels' boxes, so the cursor's lines can keep clear of the text.
+  // Read on a slow poll rather than every frame: panels only appear, resize
+  // or scroll now and then, and measuring the page each frame is not free.
+  let panels: DOMRect[] = [];
+  let panelsReadAt = -Infinity;
+  const readPanels = (t: number) => {
+    if (t - panelsReadAt < PANEL_POLL) return;
+    panelsReadAt = t;
+    panels = [...document.querySelectorAll<HTMLElement>('[data-hud-panel]')]
+      .filter((el) => el.checkVisibility?.({ opacityProperty: true }) ?? true)
+      .map((el) => el.getBoundingClientRect());
+  };
+  /** 0 on a panel, rising to 1 PANEL_FADE px clear of every panel. */
+  const panelClearance = (x: number, y: number) => {
+    let clear = 1;
+    for (const r of panels) {
+      const dx = Math.max(r.left - x, 0, x - r.right);
+      const dy = Math.max(r.top - y, 0, y - r.bottom);
+      clear = Math.min(clear, Math.hypot(dx, dy) / PANEL_FADE);
+    }
+    return clear;
+  };
+
   const starScreen = new Float32Array(STAR_COUNT * 2);
   const near: number[] = [];
-  const updateLinks = () => {
+  const updateLinks = (t: number) => {
     const m = mouse();
     let n = 0;
     if (m) {
+      readPanels(t);
       const mx = m.x * w;
       const my = m.y * h;
       near.length = 0;
@@ -532,7 +561,21 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
             starScreen[i * 2 + 1] - starScreen[j * 2 + 1],
           );
           if (d >= LINK_RADIUS) continue;
-          const alpha = (1 - d / LINK_RADIUS) * 0.4;
+          // The whole line dims by its closest approach to a panel, sampled
+          // along its length, so one that would cross a panel never shows.
+          let clear = 1;
+          for (let k = 0; k <= 4 && clear > 0; k++) {
+            const u = k / 4;
+            clear = Math.min(
+              clear,
+              panelClearance(
+                starScreen[i * 2] + (starScreen[j * 2] - starScreen[i * 2]) * u,
+                starScreen[i * 2 + 1] + (starScreen[j * 2 + 1] - starScreen[i * 2 + 1]) * u,
+              ),
+            );
+          }
+          if (clear <= 0) continue;
+          const alpha = (1 - d / LINK_RADIUS) * 0.4 * clear;
           for (let e = 0; e < 2; e++) {
             const src = (e ? j : i) * 3;
             const dst = (n * 2 + e) * 3;
@@ -633,7 +676,7 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
     updateSatellite(t);
     placeCamera();
     updateTrail(t);
-    updateLinks();
+    updateLinks(t);
     publishNav();
     renderer.render(scene, camera);
   };
