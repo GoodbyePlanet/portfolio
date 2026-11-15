@@ -63,14 +63,17 @@ export default function App() {
           projectsVisible={reveal.projects}
           logsVisible={reveal.logs}
         />
+        {/* Inside the HUD container so that on phones, where the container is
+            a scrolling sheet, the tagline closes the sheet instead of sitting
+            under the panels. On desktop the container has no box of its own. */}
+        <span className={styles.tagline}>The universe rewards the curious.</span>
       </div>
       <Nebula />
-      <World mouseRef={mouseRef} alignment={alignment} />
+      <World mouseRef={mouseRef} alignment={alignment} phase={phase} />
       <ConstellationNav state={state} onStarClick={handleStarClick} />
       <ShootingStars />
       <CursorTrail mouseRef={mouseRef} />
       <Rocket phase={phase} onLaunch={launch} onPhaseEnd={onPhaseEnd} />
-      <span className={styles.tagline}>The universe rewards the curious.</span>
     </Scene>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import type { MousePos } from '../../hooks/useParallax';
+import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import { createWorld, type ThemeColors, type World as WorldHandle } from './worldScene';
 import styles from './World.module.css';
 
@@ -8,6 +9,7 @@ interface WorldProps {
   mouseRef: RefObject<MousePos | null>;
   /** 0 = rocket constellation scattered, 1 = lined up. */
   alignment: number;
+  phase: LaunchPhase;
 }
 
 function readTheme(): ThemeColors {
@@ -33,7 +35,7 @@ function readTheme(): ThemeColors {
   };
 }
 
-export function World({ mouseRef, alignment }: WorldProps) {
+export function World({ mouseRef, alignment, phase }: WorldProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<WorldHandle | null>(null);
   // Read once at mount so the page opens on the current pose, not mid-swing.
@@ -70,6 +72,10 @@ export function World({ mouseRef, alignment }: WorldProps) {
   useEffect(() => {
     worldRef.current?.setAlignment(alignment);
   }, [alignment]);
+
+  useEffect(() => {
+    worldRef.current?.setPhase(phase);
+  }, [phase]);
 
   return <div className={styles.host} ref={hostRef} aria-hidden="true" />;
 }

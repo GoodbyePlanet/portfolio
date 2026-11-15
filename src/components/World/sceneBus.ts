@@ -17,6 +17,10 @@ export const navScreen = new Float32Array(
 /** Viewport y (px) of the top of the Earth's horizon. */
 export const horizon = { y: window.innerHeight * 0.85 };
 
+/** Viewport px of the rocket's nozzle exit, written by the rocket's canvas
+ *  every frame so the world can leave a trail where it has been. */
+export const nozzle = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
 const listeners = new Set<() => void>();
 
 export function publishNavScreen() {

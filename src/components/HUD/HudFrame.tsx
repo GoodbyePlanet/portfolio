@@ -9,7 +9,7 @@ interface HudFrameProps {
 
 export function HudFrame({ title, corner, children }: HudFrameProps) {
   return (
-    <div className={styles.hudFrame}>
+    <div className={styles.hudFrame} data-hud-panel>
       <div className={styles.hudScanlines} />
       <div className={styles.hudHeader}>
         <span className={styles.hudPrompt}>&gt;</span> <span>{title}</span>
