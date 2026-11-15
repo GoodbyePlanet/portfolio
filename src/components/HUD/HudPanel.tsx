@@ -40,7 +40,7 @@ export function HudPanel({ visible = true }: { visible?: boolean }) {
 
   return (
     <div className={`${styles.hudPanel} ${visible ? styles.hudPanelVisible : ''}`}>
-      <HudFrame title="INFO" corner={met}>
+      <HudFrame title="INFO" corner={<span title="Mission time since my first commit, April 2017">{met}</span>}>
         {rows.map((row, i) => (
           <div
             key={i}

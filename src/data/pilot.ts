@@ -5,6 +5,12 @@ export const pilot = {
     status: 'Developing',
 } as const;
 
+/**
+ * T-zero for the HUD mission clock: career start, taken from the first commit
+ * of github.com/GoodbyePlanet/HotelManagement (610db79).
+ */
+export const missionStart = '2017-04-24T15:31:49Z';
+
 export const socials = [
     {label: 'GitHub', href: 'https://github.com/GoodbyePlanet'},
     {label: 'LinkedIn', href: 'https://www.linkedin.com/in/nemanja-vasic-linked'},
