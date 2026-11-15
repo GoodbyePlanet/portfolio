@@ -81,10 +81,14 @@ interface Layout {
   horizon: number;
 }
 
-/** Matches the old CSS planet: 250/300/350vw across, top at 85/75/70%. */
+/** The planet is 250/300/350vw across (desktop/tablet/phone), as the old CSS one was. */
 function layoutFor(w: number): Layout {
-  if (w <= 480) return { earthRadius: 1.75 * w, horizon: 0.7 };
-  if (w <= 768) return { earthRadius: 1.5 * w, horizon: 0.75 };
+  // Phones and tablets stack the HUD in a sheet over the lower 55% of the
+  // screen. The horizon sits high enough that even the ends of the limb,
+  // where it curves down at the screen edges, clear the top of that sheet
+  // rather than showing through the panels' text.
+  if (w <= 480) return { earthRadius: 1.75 * w, horizon: 0.39 };
+  if (w <= 768) return { earthRadius: 1.5 * w, horizon: 0.36 };
   return { earthRadius: 1.25 * w, horizon: 0.85 };
 }
 

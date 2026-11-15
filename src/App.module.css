@@ -41,4 +41,15 @@
         mask-image: linear-gradient(to bottom, transparent 0%, black 4%);
         -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 4%);
     }
+
+    /* The last item in the sheet, after the panels. */
+    .tagline {
+        position: static;
+        transform: none;
+        align-self: center;
+        flex-shrink: 0;
+        padding: 4px 0 8px;
+        font-size: 10px;
+        letter-spacing: 2px;
+    }
 }
