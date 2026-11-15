@@ -18,7 +18,7 @@ import { NAV_STARS, NAV_LABEL_POS } from '../../hooks/useConstellationNav';
 import type { MousePos } from '../../hooks/useParallax';
 import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import { createEarth, type EarthColors } from './earth';
-import { navScreen, publishNavScreen, horizon } from './sceneBus';
+import { navScreen, publishNavScreen, horizon, nozzle } from './sceneBus';
 
 const FOV = 30;
 const TAN = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
@@ -55,6 +55,16 @@ const NAV_DEPTH = [0, 0.2, -0.22, 0.14, -0.16, 0.28, -0.09, 0.16, -0.26, 0.1, -0
 
 /** Planet centre's depth as a fraction of its radius (+ is toward the camera). */
 const EARTH_FORWARD = 0.25;
+
+/** The vapour trail the launch leaves behind: points along the rocket's path,
+ *  each fading over TRAIL_LIFE seconds, so the line thins out from the pad up. */
+const TRAIL_POINTS = 128;
+const TRAIL_LIFE = 1.4;
+const TRAIL_OPACITY = 0.8;
+/** A ribbon rather than a GL line, which is a hairline on dense screens. */
+const TRAIL_WIDTH = 2;
+/** Screen px the rocket travels between points. */
+const TRAIL_STEP = 8;
 
 const CURSOR_RADIUS = 120;
 const LINK_RADIUS = 150;
@@ -243,6 +253,37 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
   scene.add(links);
   let linkColor = new THREE.Color();
 
+  /* --- launch trail ---------------------------------------------- */
+
+  // Two vertices per point, either side of the path.
+  const trailPos = new Float32Array(TRAIL_POINTS * 2 * 3);
+  const trailCol = new Float32Array(TRAIL_POINTS * 2 * 4);
+  const trailBorn = new Float32Array(TRAIL_POINTS);
+  const trailGeo = new THREE.BufferGeometry();
+  const trailPosBuf = new THREE.BufferAttribute(trailPos, 3).setUsage(THREE.DynamicDrawUsage);
+  const trailColBuf = new THREE.BufferAttribute(trailCol, 4).setUsage(THREE.DynamicDrawUsage);
+  trailGeo.setAttribute('position', trailPosBuf);
+  trailGeo.setAttribute('color', trailColBuf);
+  const trailIndex: number[] = [];
+  for (let i = 0; i < TRAIL_POINTS - 1; i++) {
+    const a = i * 2;
+    trailIndex.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+  }
+  trailGeo.setIndex(trailIndex);
+  trailGeo.setDrawRange(0, 0);
+  const trailMat = new THREE.MeshBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const trail = new THREE.Mesh(trailGeo, trailMat);
+  trail.frustumCulled = false;
+  trail.renderOrder = 4;
+  scene.add(trail);
+  let trailCount = 0;
+  let trailLast = { x: 0, y: 0 };
+
   /* --- rocket constellation -------------------------------------- */
 
   const navWorld = [...NAV_STARS, NAV_LABEL_POS].map(() => new THREE.Vector3());
@@ -428,6 +469,44 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
     if (moved) publishNavScreen();
   };
 
+  // The trail is laid in the world, on the rocket's plane, at the point the
+  // nozzle covers on screen right now. From then on it belongs to the world:
+  // it sinks with the horizon as the camera climbs.
+  const ray = new THREE.Vector3();
+  const updateTrail = (t: number) => {
+    const burning = phase === 'launching' && t - phaseStart > LAUNCH_CROUCH;
+    if (
+      burning &&
+      trailCount < TRAIL_POINTS &&
+      nozzle.y > -40 &&
+      (trailCount === 0 || Math.hypot(nozzle.x - trailLast.x, nozzle.y - trailLast.y) >= TRAIL_STEP)
+    ) {
+      ray.set((nozzle.x / w) * 2 - 1, 1 - (nozzle.y / h) * 2, 0.5).unproject(camera);
+      ray.sub(camera.position);
+      const k = -camera.position.z / ray.z;
+      const x = camera.position.x + ray.x * k;
+      const y = camera.position.y + ray.y * k;
+      trailPos.set([x - TRAIL_WIDTH / 2, y, 0, x + TRAIL_WIDTH / 2, y, 0], trailCount * 6);
+      trailBorn[trailCount] = t;
+      trailLast = { x: nozzle.x, y: nozzle.y };
+      trailCount++;
+      trailPosBuf.needsUpdate = true;
+    }
+    if (trailCount === 0) return;
+
+    let alive = false;
+    for (let i = 0; i < trailCount; i++) {
+      const left = Math.max(0, 1 - (t - trailBorn[i]) / TRAIL_LIFE);
+      if (left > 0) alive = true;
+      const alpha = TRAIL_OPACITY * Math.pow(left, 1.5);
+      trailCol.set([linkColor.r, linkColor.g, linkColor.b, alpha], i * 8);
+      trailCol.set([linkColor.r, linkColor.g, linkColor.b, alpha], i * 8 + 4);
+    }
+    trailColBuf.needsUpdate = true;
+    if (!alive && !burning) trailCount = 0;
+    trailGeo.setDrawRange(0, Math.max(0, trailCount - 1) * 6);
+  };
+
   const starScreen = new Float32Array(STAR_COUNT * 2);
   const near: number[] = [];
   const updateLinks = () => {
@@ -553,6 +632,7 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
     earth.update(t);
     updateSatellite(t);
     placeCamera();
+    updateTrail(t);
     updateLinks();
     publishNav();
     renderer.render(scene, camera);
@@ -628,6 +708,8 @@ export function createWorld({ mouse, alignment, reduced }: WorldInputs): World {
       satMat.dispose();
       linkGeo.dispose();
       linkMat.dispose();
+      trailGeo.dispose();
+      trailMat.dispose();
       renderer.dispose();
     },
   };

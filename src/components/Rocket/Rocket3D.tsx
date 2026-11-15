@@ -4,7 +4,7 @@ import type { LaunchPhase } from '../../hooks/useLaunchSequence';
 import { buildRocket, BOX_TOP, NOZZLE_EXIT, type RocketPalette } from './rocketModel';
 import { createExhaust, type ExhaustColors } from './exhaust';
 import { createSmoke } from './smoke';
-import { horizon } from '../World/sceneBus';
+import { horizon, nozzle } from '../World/sceneBus';
 import styles from './Rocket.module.css';
 
 /**
@@ -395,6 +395,8 @@ export function Rocket3D({ phase, boost = false, spin = false }: Rocket3DProps) 
       setEngineLight(t);
       const box = body.getBoundingClientRect();
       anchorSmoke(box);
+      nozzle.x = box.left + box.width / 2;
+      nozzle.y = box.bottom;
       const gap = horizon.y - box.bottom;
       const near = THREE.MathUtils.clamp(1 - gap / (0.6 * window.innerHeight), 0, 1);
       earthshine.intensity = earthshineMax * near * near;
